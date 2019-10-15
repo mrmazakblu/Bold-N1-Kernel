@@ -1,24 +1,36 @@
 #!/bin/bash
 
 #echo TOOLCHAIN used is gcc-linaro-6.3.1-2017.02-i686_aarch64-linux-gnu
-echo TOOLCHAIN used is company prebuilt
+#echo TOOLCHAIN used is gcc-linaro-7.4.1-2019.02-i686_aarch64-linux-gnu
+#echo TOOLCHAIN used is company prebuilt
+echo TOOLCHAIN used is gcc-4.9
 #if [ -e ../gcc-linaro-6.3.1-2017.02-i686_aarch64-linux-gnu/bin ]
-#then
-#	echo "already exists"
-#else
-#	wkdir=$(pwd)
-#	cd ../
-#	wget https://releases.linaro.org/components/toolchain/binaries/6.3-2017.02/aarch64-linux-gnu/gcc-linaro-6.3.1-2017.02-i686_aarch64-linux-gnu.tar.xz
+#if [ -e ../gcc-linaro-7.4.1-2019.02-i686_aarch64-linux-gnu/bin ]
+if [ -e ../aarch-4.9/bin ]
+then
+	echo "already exists"
+else
+	wkdir=$(pwd)
+	cd ../
+#	wget https://releases.linaro.org/components/toolchain/binaries/6.3-2017.02/aarch64-linux-gnu/gcc-#linaro-6.3.1-2017.02-i686_aarch64-linux-gnu.tar.xz
 #	tar xf gcc-linaro-6.3.1-2017.02-i686_aarch64-linux-gnu.tar.xz
-#	cd "$wkdir"
-#fi
+#	wget https://releases.linaro.org/components/toolchain/binaries/7.4-2019.02/aarch64-linux-gnu/gcc-#linaro-7.4.1-2019.02-i686_aarch64-linux-gnu.tar.xz
+#	tar xf gcc-linaro-7.4.1-2019.02-i686_aarch64-linux-gnu.tar.xz
+	mkdir aarch-4.9
+	cd aarch-4.9
+	wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz
+	tar xf master.tar.gz
+	cd "$wkdir"
+fi
 mkdir ../output-64
 make mrproper O=../output-64
 make clean O=../output-64
 export ARCH=arm64
 #export CROSS_COMPILE=~/android/aarch64-linux-4.9/aarch64-linux-android-4.9/bin/aarch64-linux-android-
-#export CROSS_COMPILE=~/android/Blu_vivo-xl4/gcc-linaro-6.3.1-2017.02-i686_aarch64-linux-gnu/bin/aarch64-linux-gnu-
-export CROSS_COMPILE=~/android/Bold-N1/kernel/39P_odm_release_20190731/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+#export CROSS_COMPILE=~/android/Bold-n1/gcc-linaro-6.3.1-2017.02-i686_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+#export CROSS_COMPILE=~/android/Bold-n1/gcc-linaro-7.4.1-2019.02-i686_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+export CROSS_COMPILE=~/android/Bold-n1/aarch-4.9/bin/aarch64-linux-android-
+#export CROSS_COMPILE=~/android/Bold-N1/kernel/39P_odm_release_20190731/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
 #ARCH=arm64 make O=../output-64 k62v1_64_bsp_defconfig
 #ARCH=arm64 make O=../output-64 k71v1_64_bsp_defconfig
 ARCH=arm64 make O=../output-64 bold-n1_defconfig
