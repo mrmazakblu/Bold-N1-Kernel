@@ -106,6 +106,13 @@
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
+//prize-lixuefeng-20150512-start
+#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+#include "../../../hardware_info/hardware_info.h"
+extern struct hardware_info current_lcm_info;
+#endif
+//prize-lixuefeng-20150512-end
+
 static struct disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
 
 static struct RDMA_CONFIG_STRUCT decouple_rdma_config;
@@ -3203,6 +3210,11 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		goto done;
 	} else {
 		DISPCHECK("disp_lcm_probe SUCCESS\n");
+		//prize-lixuefeng-20150512-start
+		#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+		current_lcm_info=pgc->plcm->drv->lcm_info;
+		#endif
+		//prize-lixuefeng-20150512-end
 	}
 
 	lcm_param = disp_lcm_get_params(pgc->plcm);

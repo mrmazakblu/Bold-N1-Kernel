@@ -393,11 +393,14 @@ int mtkfb_set_backlight_mode(unsigned int mode)
 	}
 
 	sem_early_suspend_cnt--;
-	if (primary_display_is_sleepd())
-		goto End;
+	//prize-add wyq 20190301 go forward to exit hbm although display is sleepd-start
+	//if (primary_display_is_sleepd()) 
+	//	goto End;
 
 	/* DISP_SetBacklight_mode(mode); */
-End:
+	primary_display_setbacklight_mode(mode);//prize-add wyq 20181226 add  lcd-backlight mode interface
+//End:
+	//prize-add wyq 20190301 go forward to exit hbm although display is sleepd-end
 	sem_flipping_cnt++;
 	sem_early_suspend_cnt++;
 	up(&sem_early_suspend);

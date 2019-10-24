@@ -55,6 +55,13 @@
 #include "imgsensor_clk.h"
 #include "imgsensor.h"
 
+//prize-lixuefeng-20150512-start
+#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+#include "../../../hardware_info/hardware_info.h"
+extern struct hardware_info current_camera_info[3];
+#endif
+//prize-lixuefeng-20150512-end
+
 #ifdef CONFIG_MTK_SMI_EXT
 static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
@@ -413,6 +420,34 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 		PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
 
 		err = ERROR_NONE;
+		
+		//prize-lixuefeng-20150512-start
+		#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+		if(psensor->inst.sensor_idx >= 0 && psensor->inst.sensor_idx < 3)
+		{
+			if (sensorID == 0x30a) {
+				strcpy(current_camera_info[2].chip,psensor_inst->psensor_name);
+				sprintf(current_camera_info[2].id,"0x%04x",sensorID);
+				strcpy(current_camera_info[2].vendor,"unknow");
+
+			}else {
+				strcpy(current_camera_info[psensor->inst.sensor_idx].chip,psensor_inst->psensor_name);
+    			sprintf(current_camera_info[psensor->inst.sensor_idx].id,"0x%04x",sensorID);
+    			strcpy(current_camera_info[psensor->inst.sensor_idx].vendor,"unknow");
+			}
+			if (1){
+				MSDK_SENSOR_RESOLUTION_INFO_STRUCT sensorResolution;
+				imgsensor_sensor_get_resolution(psensor,&sensorResolution);
+				if (sensorID == 0x30a){
+					sprintf(current_camera_info[2].more,"%d*%d",sensorResolution.SensorFullWidth,sensorResolution.SensorFullHeight);
+
+				}else{
+					sprintf(current_camera_info[psensor->inst.sensor_idx].more,"%d*%d",sensorResolution.SensorFullWidth,sensorResolution.SensorFullHeight);
+				}
+			}
+		}
+		#endif
+		//prize-lixuefeng-20150512-end
 	}
 
 	if (err != ERROR_NONE)

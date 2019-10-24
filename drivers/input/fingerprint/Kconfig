@@ -29,7 +29,7 @@ endif
 if MTK_FINGERPRINT_SELECT = "GF318M" ||  MTK_FINGERPRINT_SELECT = "GF5216"
 config GOODIX_FINGERPRINT
 	bool "Goodix Fingerprint"
-	default y
+	default n
 	---help---
 	Goodix Fingerprint chip GF316M/GF318M/GF3118M/GF518M/GF5118M/GF516M/GF816M/GF3208/GF3206/GF3266/GF3288/GF5206/GF5216/GF5208 TEE driver
 
@@ -39,5 +39,39 @@ config GOODIX_SENSOR_TYPE
 	---help---
 	Must input sensor type, or default is GF316M GF318M GF3118M GF518M GF5118M GF516M GF816M GF3208 GF3206 GF3266 GF3288 GF5206 GF5216 GF5208
 endif
+# begin, prize-lifenfen-20190104, add for ata sunwave fp
+if MTK_FINGERPRINT_SELECT = "sunwavecorp_fp"
+  config SUNWAVE_FINGERPRINT
+     bool "SUNWAVE Fingerprint"
+     default y
+     ---help---
+     MICROARRAY fingerprint SUNWAVE's device.
 endif
+# end, prize-lifenfen-20190104, add for ata sunwave fp
+# begin, prize-pengguangyi-20190121, add for goodix gf5118m fp
+config GOODIX_GF5118M_FINGERPRINT
+	bool "Goodix GF5118M Fingerprint"
+	default n
+	---help---
+	Goodix Fingerprint chip GF316M/GF318M/GF3118M/GF518M/GF5118M/GF516M/GF816M/GF3208/GF3206/GF3266/GF3288/GF5206 TEE driver
+endif
+# end, prize-pengguangyi-20190121, add for goodix gf5118m fp
+#prize-add finger-pengzhipeng-20190419-start
+
+if MTK_FINGERPRINT_SELECT = "ft9362"
+  config FT9362_FINGERPRINT
+     bool "FT9362 Fingerprint"
+     default y
+     ---help---
+     MICROARRAY fingerprint FT9362's device.
+endif
+
+if MTK_FINGERPRINT_SELECT = "ft9362_tee"
+  config FT9362_FINGERPRINT_TEE
+     bool "FT9362 TEE Fingerprint"
+     default y
+     ---help---
+     MICROARRAY fingerprint FT9362 TEE's device.
+endif
+#prize-add finger-pengzhipeng-20190419-end
 endmenu

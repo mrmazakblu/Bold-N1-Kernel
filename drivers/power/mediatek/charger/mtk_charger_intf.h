@@ -176,6 +176,32 @@ struct battery_thermal_protection_data {
 	int max_charge_temperature_minus_x_degree;
 };
 
+//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724 start
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+enum charge_temperature_state_enum {
+	STEP_INIT = 0,
+	STEP_T1,
+	STEP_T2,
+	STEP_T3
+};
+
+struct battery_temperature_step_charge_data {
+	int current_step;//1: -5-20; 2: 20-45; 3:45-60
+	int start_step1_temp;// -5
+	int start_step2_temp;// 20
+	int start_step3_temp;// 45
+	int end_step3_temp;//60
+	int exit_step3_temp;//40
+	unsigned int step3_total_limit_time;// 20 min  or 1200s
+	int step3_limit_timeout;
+	struct timespec step3_limit_begin_time;
+	int enter_step3_battery_percentage;//Marker temperature is greater than 45 degrees while battery voltage is greater than 4.1V
+};
+#endif
+//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724 end
+
+
+
 struct charger_custom_data {
 	int battery_cv;	/* uv */
 	int max_charger_voltage;
@@ -414,6 +440,9 @@ struct charger_manager {
 
 	/* kpoc */
 	atomic_t enable_kpoc_shdn;
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+	struct battery_temperature_step_charge_data step_info;//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724
+#endif
 };
 
 /* charger related module interface */

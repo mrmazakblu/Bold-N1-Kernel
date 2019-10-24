@@ -70,7 +70,7 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
+		led_mode = <4>;//prize-mod wyq 20181226 use lcd backlight mode MT65XX_LED_MODE_CUST_LCM
 		data = <1>;
 		pwm_config = <0 1 0 0 0>;
 	};
@@ -531,6 +531,23 @@
 			pins = <PINMUX_GPIO108__FUNC_CMMCLK2>;
 		};
 	};
+	
+	/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  add for af en*/
+	camera_pins_af_en_l: cam0@af0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO77__FUNC_GPIO77>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_af_en_h: cam0@af1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO77__FUNC_GPIO77>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
 	camera_pins_default: camdefault {
 	};
 };
@@ -547,7 +564,10 @@
 			"cam_ldo_main2_vcama_0", "cam_ldo_main2_vcama_1",
 			"cam0_mclk_off", "cam0_mclk_on",
 			"cam1_mclk_off", "cam1_mclk_on",
-			"cam2_mclk_off", "cam2_mclk_on";
+			"cam2_mclk_off", "cam2_mclk_on",
+			/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
+			"af_en_h", "af_en_l";
+			/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
 	pinctrl-2 = <&camera_pins_cam0_rst_1>;
@@ -573,7 +593,10 @@
 	pinctrl-22 = <&camera_pins_cam1_mclk_on>;
 	pinctrl-23 = <&camera_pins_cam2_mclk_off>;
 	pinctrl-24 = <&camera_pins_cam2_mclk_on>;
-
+    /*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
+	pinctrl-25 = <&camera_pins_af_en_h>;
+	pinctrl-26 = <&camera_pins_af_en_l>;
+	/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
 	status = "okay";
 };
 

@@ -1377,6 +1377,51 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm, void *handle, int level
 	return -1;
 }
 
+//prize-add wyq 20181226 add  lcd-backlight mode interface-start
+int disp_lcm_set_backlight_mode(struct disp_lcm_handle *plcm, void *handle, int mode)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_backlight_mode) {
+			lcm_drv->set_backlight_mode(handle, mode);//prize-wyq 20190325 modify for cmdq handle
+		} else {
+			DISPPR_ERROR("FATAL ERROR, lcm_drv->set_backlight mode is null\n");
+			return -1;
+		}
+
+		return 0;
+	}
+	DISPPR_ERROR("lcm_drv is null\n");
+	return -1;
+}
+//prize-add wyq 20181226 add  lcd-backlight mode interface-end
+
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 begin */
+int disp_lcm_backlight_level(struct disp_lcm_handle *plcm)
+{
+	int level = 0;
+        LCM_DRIVER *lcm_drv = NULL;
+
+        DISPFUNC();
+        if (_is_lcm_inited(plcm)) {
+                lcm_drv = plcm->drv;
+                if (lcm_drv->backlight_level) {
+                        level = lcm_drv->backlight_level();
+                } else {
+                        DISPPR_ERROR("FATAL ERROR, lcm_drv->backlight_level is null\n");
+                        return -1;
+                }
+
+                return level;
+        }
+        DISPPR_ERROR("lcm_drv is null\n");
+        return -1;
+}
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 end */
+
 int disp_lcm_ioctl(struct disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {
 	return 0;

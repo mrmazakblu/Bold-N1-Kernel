@@ -60,8 +60,10 @@ extern u8 g_debug_level;
 #define GF_NAV_INPUT_DOUBLE_CLICK	KEY_VOLUMEUP
 #define GF_NAV_INPUT_LONG_PRESS		KEY_SEARCH
 #define GF_NAV_INPUT_HEAVY		KEY_CHAT
-
-#define GF_KEY_INPUT_HOME		KEY_HOMEPAGE
+//prize-add huhongcheng 20190329 change HOME_KEY to F11 start
+#define GF_KEY_INPUT_HOME		KEY_F11
+//#define GF_KEY_INPUT_HOME		KEY_HOMEPAGE
+//prize-add huhongcheng 20190329 change HOME_KEY to F11 end
 #define GF_KEY_INPUT_MENU		KEY_MENU
 #define GF_KEY_INPUT_BACK		KEY_BACK
 #define GF_KEY_INPUT_POWER		KEY_POWER
@@ -237,7 +239,7 @@ struct gf_device {
 
 #ifdef CONFIG_OF
 	struct pinctrl *pinctrl_gpios;
-	struct pinctrl_state *pins_default;
+	struct pinctrl_state *pins_default, *pins_irq, *ldo_high, *ldo_low;//prize-mod wyq 20181220 for ldo enable
 	struct pinctrl_state *pins_miso_spi, *pins_miso_pullhigh, *pins_miso_pulllow;
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
@@ -250,9 +252,11 @@ struct gf_device {
 #endif
 
 #ifdef SUPPORT_REE_SPI
-
+//prize-add wyq 20181220 for reading chip id during probe in REE
+#ifndef CONFIG_MICROTRUST_TEE_SUPPORT
 #define SUPPORT_REE_MILAN_A
-
+#define SUPPORT_REE_OSWEGO
+#endif
 #define HIGH_SPEED 6
 #define LOW_SPEED  1
 

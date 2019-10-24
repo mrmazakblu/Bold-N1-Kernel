@@ -18,6 +18,9 @@ obj-$(CONFIG_MTK_FLASHLIGHT_HA7109)      += flashlights-ha7109.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT4509)      += flashlights-rt4509.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
+#/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  add for flashlight */
+obj-$(CONFIG_MTK_FLASHLIGHT_AW_GPIO)     += flashlights-aw-gpio.o
+#/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  add for flashlight */
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_PT)        += -DCONFIG_MTK_FLASHLIGHT_PT
@@ -35,4 +38,10 @@ subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/include/mt-plat/$(MTK_PLATFORM)/include/mach \
 	-I$(MTK_CUSTOM_PATH)/pmic/include \
 	-I$(MTK_CUSTOM_PATH)/pmic
+
+
+###prize
+obj-$(CONFIG_MTK_FLASHLIGHT_AW3641_GPIO)     += flashlights-aw3641-gpio.o
+obj-$(CONFIG_MTK_FLASHLIGHT_WD3100D_GPIO)     += flashlights-wd3100d-gpio.o
+obj-$(CONFIG_MTK_FLASHLIGHT_ISINK)     += flashlights-isink.o
 

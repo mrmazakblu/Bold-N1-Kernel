@@ -10,6 +10,13 @@ ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 endif
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+
+# prize added by chenjiaxi, TrustKernel TEE, 20190111-start
+ifeq ($(CONFIG_TRUSTKERNEL_TEE_FP_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/tkcore/include
+endif
+# prize added by chenjiaxi, TrustKernel TEE, 20190111-end
+
 # small core, mostly translating board-specific
 # config declarations into driver model code
 obj-$(CONFIG_SPI_MASTER)		+= spi.o

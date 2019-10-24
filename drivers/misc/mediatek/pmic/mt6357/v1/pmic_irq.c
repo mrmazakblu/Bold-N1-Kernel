@@ -281,11 +281,16 @@ unsigned int sp_interrupt_size = ARRAY_SIZE(sp_interrupts);
 
 #if IRQ_HANDLER_READY
 /* PWRKEY Int Handler */
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+int power_down_flag = 0;
+#endif
 void pwrkey_int_handler(void)
 {
 	IRQLOG("[pwrkey_int_handler] Press pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
-
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+		power_down_flag = 1;
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
 	kpd_pwrkey_pmic_handler(0x1);
 #endif

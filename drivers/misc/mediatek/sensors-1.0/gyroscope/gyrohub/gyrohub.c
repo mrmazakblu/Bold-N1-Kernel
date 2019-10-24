@@ -545,10 +545,13 @@ static int gyrohub_factory_get_data(int32_t data[3], int *status)
 	int ret = 0;
 
 	ret = gyrohub_get_data(&data[0], &data[1], &data[2], status);
+/* prize deleted by lifenfen, for gyroscope factory test failure, raw data is 0.0x, /1000  is 0 , 20190123 begin */
+#if 0
 	data[0] = data[0] / 1000;
 	data[1] = data[1] / 1000;
 	data[2] = data[2] / 1000;
-
+#endif
+/* prize deleted by lifenfen, for gyroscope factory test failure, raw data is 0.0x, /1000  is 0 , 20190123 end */
 	return ret;
 }
 static int gyrohub_factory_get_raw_data(int32_t data[3])

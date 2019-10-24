@@ -34,6 +34,59 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+/*prize-add lcm-pengguangyi-20190119-start*/
+#if defined(HX83112_FHDP_DSI_VDO_AUO)
+	&hx83112_fhdp_dsi_vdo_auo_drv,
+#endif	
+/*prize-add lcm-pengguangyi-20190119-end*/
+/* prize added by chenjiaxi, add lcm, 20190111-start */
+#if defined(HX8394F_DSI_VDO_HD1440_HLT_55_HC)
+	&hx8394f_dsi_vdo_hd1440_hlt_55_hc_lcm_drv,
+#endif
+#if defined(ST7703_HD1440_DSI_VDO_XL)
+	&st7703_hd1440_dsi_vdo_xl_lcm_drv,
+#endif
+#if defined(ST7703_DSI_VDO_HD1440_DZX_55_HSD)
+	&st7703_dsi_vdo_hd1440_dzx_55_hsd_lcm_drv,
+#endif
+#if defined(ILI9881D_HD1440_DSI_VDO_BOE)
+	&ili9881d_hd1440_dsi_vdo_boe_lcm_drv,
+#endif
+#if defined(ILI9881D_HD1440_DSI_VDO_LT)
+	&ili9881d_hd1440_dsi_vdo_lt_lcm_drv,
+#endif
+/* prize added by chenjiaxi, add lcm, 20190111-end */
+/*prize-add lcm ft8716f-pengguangyi-20190112-start*/
+#if defined(FT8716F_FHDP_DSI_VDO_AUO618)
+	&ft8716f_fhdp_dsi_vdo_auo618_lcm_drv,
+#endif	
+/*prize-add lcm ft8716-pengguangyi-20190112-end*/
+/*prize-add ili9881c-pengzhipeng-20180827-start*/
+#if defined(ILI9881C_HD_DSI_VDO_HSD)
+  &ili9881c_hd_dsi_vdo_hsd_lcm_drv,
+#endif
+/*#prize-add ili9881c-pengzhipeng-20180827-end*/
+//prize added by chenjiaxi, lcm td4100 driver, 20190111-start
+#if defined(TD4100_HD720_DSI_VDO_JDI_INCELL)
+	&td4100_hd720_dsi_vdo_jdi_incell_lcm_drv,
+#endif
+//prize added by chenjiaxi, lcm td4100 driver, 20190111-end
+/* prize added by wangmengdong, lcm, add ili9881p ,20190122-start */
+#if defined(ILI9881P_HD1440_DSI_VDO_PANDA_HLT)
+    &ili9881p_hd1440_dsi_vdo_panda_hlt_lcm_drv,
+#endif
+/* prize added by wangmengdong, lcm, add ili9881p ,20190122-end  */
+/* prize added by yaozhipeng, lcm, add ili9881c_jt st7703_bx st7703_bx ,20190126-start */
+#if defined(ILI9881C_HJ_DSI_VDO_CTC_JT)
+	&ili9881c_hj_dsi_vdo_ctc_jt_lcm_drv,
+#endif
+#if defined(ST7703_HD1440_DSI_VDO_SC_BX)
+	&st7703_hd1440_dsi_vdo_sc_bx_lcm_drv,
+#endif
+#if defined(ST7703_HD1440_DSI_VDO_LT_BX)
+	&st7703_hd1440_dsi_vdo_lt_bx_lcm_drv,
+#endif
+/* prize added by yaozhipeng, lcm, add ili9881c_jt st7703_bx st7703_bx ,20190126-end */
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
@@ -707,6 +760,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35521_HD720_DSI_VDO_BOE)
 	&nt35521_hd720_dsi_vdo_boe_lcm_drv,
 #endif
+/*prize added by yaozhipeng, nt35521, 20190118-start*/
+#if defined(NT35521_HD720_DSI_VDO_BOE55)
+	&nt35521_hd720_dsi_vdo_boe55_lcm_drv,
+#endif
+/*prize added by yaozhipeng, nt35521, 20190118-start*/
 #if defined(NT35521_HD720_DSI_VIDEO_TM)
 	&nt35521_hd720_tm_lcm_drv,
 #endif
@@ -1151,6 +1209,18 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(ES6311_ANX6585_ZIGZAG_WXGA)
 	&es6311_anx6585_zigzag_wxga_lcm_drv,
 #endif
+
+/* begin, prize-20181205-lifenfen, add lcm r66455_fhdp_dsi_vdo_visionox */
+#if defined(R66455_FHDP_DSI_VDO_VISIONOX)
+	&r66455_fhdp_dsi_vdo_visionox_lcm_drv,
+#endif
+/* end, prize-20181205-lifenfen, add lcm r66455_fhdp_dsi_vdo_visionox */
+
+/*prize added by yaozhipeng, jd9366, 20190118-start*/
+#if defined(JD9366_HD720_DSI_VDO_XM)
+	&jd9366_hd720_dsi_vdo_xm_lcm_drv,
+#endif
+/*prize added by yaozhipeng, jd9366, 20190118-end*/
 };
 
 unsigned char lcm_name_list[][128] = {

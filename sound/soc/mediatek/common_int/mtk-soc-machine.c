@@ -703,6 +703,11 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 			   SND_SOC_DAIFMT_CBS_CFS |
 			   SND_SOC_DAIFMT_NB_NF,
 		.ops = &cs35l35_ops,
+/* begin, prize-lifenfen-20181213, add for smartpa awinic aw8898 */
+#elif defined(CONFIG_SND_SMARTPA_AW8898)
+		.codec_dai_name = "aw8898-aif",
+		.codec_name = "aw8898_smartpa",
+/* end, prize-lifenfen-20181213, add for smartpa awinic aw8898 */
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
@@ -742,12 +747,16 @@ static int mt_soc_snd_init(struct platform_device *pdev)
 	int ret;
 	int daiLinkNum = 0;
 
+/* begin, prize-lifenfen-20181213, add for smartpa awinic aw8898 */
+#ifndef CONFIG_SND_SMARTPA_AW8898
 	ret = mtk_spk_update_dai_link(mt_soc_extspk_dai, pdev);
 	if (ret) {
 		dev_err(&pdev->dev, "%s(), mtk_spk_update_dai_link error\n",
 			__func__);
 		return -EINVAL;
 	}
+#endif
+/* end, prize-lifenfen-20181213, add for smartpa awinic aw8898 */
 
 	get_ext_dai_codec_name();
 	pr_debug("mt_soc_snd_init dai_link = %p\n", mt_snd_soc_card_mt.dai_link);

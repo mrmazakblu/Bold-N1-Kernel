@@ -80,7 +80,16 @@
 #include "simulator_kernel.h"
 #endif
 
-
+/* prize added by chenjiaxi, battery info, 20190115-start */
+#if defined(CONFIG_PRIZE_HARDWARE_INFO_BAT)
+#include "../../../misc/mediatek/hardware_info/hardware_info.h"
+extern struct hardware_info current_battery_info;
+unsigned char s_Q_MAX_50[32] = "0";
+unsigned char s_Q_MAX_25[32] = "0";
+unsigned char s_Q_MAX_0[32] = "0";
+unsigned char s_Q_MAX_10[32] = "0";
+#endif
+/* prize added by chenjiaxi, battery info, 20190115-end */
 
 /* ============================================================ */
 /* global variable */
@@ -783,6 +792,25 @@ static void fg_custom_parse_table(const struct device_node *np,
 		profile_p->resistance2 = resistance;
 		idx = idx + 3;
 	}
+    
+/* prize added by chenjiaxi, battery info, 20190115-start */
+#if defined(CONFIG_PRIZE_HARDWARE_INFO_BAT)
+	strcpy(current_battery_info.batt_versions, "V0.0.0");
+    if (!strcmp(node_srting, "battery0_profile_t0")) {
+        sprintf(s_Q_MAX_50,"%d",profile_p->mah);
+        strcpy(current_battery_info.Q_MAX_50, s_Q_MAX_50);
+    } else if (!strcmp(node_srting, "battery0_profile_t1")) {
+        sprintf(s_Q_MAX_25,"%d",profile_p->mah);
+        strcpy(current_battery_info.Q_MAX_25, s_Q_MAX_25);
+    } else if (!strcmp(node_srting, "battery0_profile_t3")) {
+        sprintf(s_Q_MAX_0,"%d",profile_p->mah);
+        strcpy(current_battery_info.Q_MAX_0, s_Q_MAX_0);
+    } else if (!strcmp(node_srting, "battery0_profile_t4")) {
+        sprintf(s_Q_MAX_10,"%d",profile_p->mah);
+        strcpy(current_battery_info.Q_MAX_10, s_Q_MAX_10);
+    }
+#endif
+/* prize added by chenjiaxi, battery info, 20190115-end */
 }
 
 
@@ -1843,9 +1871,12 @@ void fg_charger_in_handler(void)
 
 void fg_bat_temp_int_init(void)
 {
+/* prize added by lifenfen, turn off NTC , 20190513 begin */
+#if !defined(CONFIG_MTK_DISABLE_GAUGE) && !defined(FIXED_TBAT_25)
 	int tmp = 0;
 	int fg_bat_new_ht, fg_bat_new_lt;
-
+#endif
+/* prize added by lifenfen, turn off NTC , 20190513 end */
 	if (fg_interrupt_check() == false)
 		return;
 #if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(FIXED_TBAT_25)
@@ -1867,9 +1898,12 @@ void fg_bat_temp_int_init(void)
 
 void fg_bat_temp_int_internal(void)
 {
+/* prize added by lifenfen, turn off NTC , 20190513 begin */
+#if !defined(CONFIG_MTK_DISABLE_GAUGE) && !defined(FIXED_TBAT_25)
 	int tmp = 0;
 	int fg_bat_new_ht, fg_bat_new_lt;
-
+#endif
+/* prize added by lifenfen, turn off NTC , 20190513 end */
 	if (is_fg_disabled()) {
 		battery_main.BAT_batt_temp = 25;
 		battery_update(&battery_main);

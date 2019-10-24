@@ -39,6 +39,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	int data = 0;
 	uint32_t enable = 0;
 	int threshold_data[2] = {0, 0};
+	int als_cali = 0;//add by mahuiyin 20190412
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
@@ -121,6 +122,23 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 			return -EINVAL;
 		}
 		return 0;
+	//add by mahuiyin 20190412 start
+	case ALSPS_ALS_SET_CALI:
+		if (copy_from_user(&als_cali, ptr, sizeof(als_cali)))
+			return -EFAULT;
+		if (alsps_factory.fops != NULL &&
+		    alsps_factory.fops->als_set_cali != NULL) {
+			err = alsps_factory.fops->als_set_cali(als_cali);
+			if (err < 0) {
+				pr_err("ALSPS_ALS_SET_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("ALSPS_ALS_SET_CALI NULL\n");
+			return -EINVAL;
+		}
+		return 0;
+	//add by mahuiyin 20190412 end
 	case ALSPS_GET_PS_TEST_RESULT:
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_data != NULL) {
 			err = alsps_factory.fops->ps_get_data(&data);
@@ -205,6 +223,23 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (copy_to_user(ptr, &data, sizeof(data)))
 			return -EFAULT;
 		return 0;
+	//add by mahuiyin 20190412 start
+	case ALSPS_IOCTL_ALS_GET_CALI:
+		if (alsps_factory.fops != NULL &&
+			alsps_factory.fops->als_get_cali != NULL) {
+			err = alsps_factory.fops->als_get_cali(&data);
+			if (err < 0) {
+				pr_err("ALSPS_IOCTL_ALS_GET_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("ALSPS_IOCTL_ALS_GET_CALI NULL\n");
+			return -EINVAL;
+		}
+		if (copy_to_user(ptr, &data, sizeof(data)))
+			return -EFAULT;
+		return 0;
+	//add by mahuiyin 20190412 end
 	case ALSPS_IOCTL_CLR_CALI:
 		if (copy_from_user(&data, ptr, sizeof(data)))
 			return -EFAULT;

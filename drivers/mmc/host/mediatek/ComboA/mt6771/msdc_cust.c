@@ -33,6 +33,12 @@
 #include "include/pmic_regulator.h"
 #endif
 #include <mt-plat/mtk_boot.h>
+//prize added by heqian, TF card turn off VMCH to avoid damaging SIM card, 20190529-start
+#define CONFIG_MTK_CD_LEVEL
+#ifdef CONFIG_MTK_CD_LEVEL
+extern void mmc_set_cd_gpio(unsigned int gpio);
+#endif
+//prize added by heqian, TF card turn off VMCH to avoid damaging SIM card, 20190529-end
 
 struct msdc_host *mtk_msdc_host[HOST_MAX_NUM];
 EXPORT_SYMBOL(mtk_msdc_host);
@@ -1218,6 +1224,15 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			pr_notice("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
 	}
+//prize added by heqian, TF card turn off VMCH to avoid damaging SIM card, 20190529-start
+#ifdef CONFIG_MTK_CD_LEVEL
+	//printk("lsw_sdcard %s %d host->id=%d\n",__func__,__LINE__,host->id);
+	
+	if(host->id==1){
+		mmc_set_cd_gpio(cd_gpio);
+	}
+#endif
+//prize added by heqian, TF card turn off VMCH to avoid damaging SIM card, 20190529-end
 
 	ret = of_property_read_u8(np, "hw_dvfs", &hw_dvfs_support);
 	if (ret || (hw_dvfs_support == 0))

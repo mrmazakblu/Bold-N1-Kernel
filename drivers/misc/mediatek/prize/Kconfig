@@ -1,0 +1,8 @@
+config PRIZE_LCD_BIAS
+  bool CONFIG_PRIZE_LCD_BIAS
+  default no
+  help
+    CONFIG_PRIZE_LCD_BIAS
+
+source "drivers/misc/mediatek/prize/lcdbias/Kconfig
+source "drivers/misc/mediatek/prize/hall/Kconfig

@@ -568,7 +568,15 @@ void msdc_set_smpl(struct msdc_host *host, u32 clock_mode, u8 mode, u8 type,
 		break;
 	}
 }
-
+/* prize added by wangmengdong , TF card , turn off VMCH to avoid damaging SIM card , 20190128-start */
+#if defined(CONFIG_PRIZE_POWEROFF_VMCH_QUICK)
+void msdc_sd_power_off_quick(void) //prevent vmch damage sim
+{
+    pmic_config_interface_nolock(PMIC_RG_LDO_VMCH_EN_ADDR,0x0,PMIC_RG_LDO_VMCH_EN_MASK,PMIC_RG_LDO_VMCH_EN_SHIFT); //add here for disable VMCH
+	printk("lsw_sd_test %s %d sdcard removed and power off VMCH first!\n",__func__,__LINE__);
+}
+#endif
+/* prize added by wangmengdong , TF card , turn off VMCH to avoid damaging SIM card , 20190128-end */
 void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode)
 {
 	msdc_set_smpl(host, clock_mode, host->hw->cmd_edge,

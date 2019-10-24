@@ -52,6 +52,12 @@
 #define INIT_VOLTAGE 3450
 #define BATTERY_SHUTDOWN_TEMPERATURE 60
 
+//prize-chj-2019-06-15 Low temperature negative 20 degree shutdown start
+#if defined(CONFIG_PROJECT_KOOBEE_K6319)
+#define BATTERY_SHUTDOWN_LOW_TEMPERATURE (-20)
+#endif
+//prize-chj-2019-06-15 Low temperature negative 20 degree shutdown end
+
 /* ============================================================ */
 /* typedef and Struct*/
 /* ============================================================ */
@@ -864,6 +870,7 @@ extern int pmic_get_ibus(void);
 extern int pmic_is_bif_exist(void);
 extern int pmic_get_vbus(void);
 extern bool pmic_is_battery_exist(void);
+extern int pmic_get_charging_current(void);/*prize-add-PrizeFactoryTest_Charge-by-liup-20150413 */
 
 /* usb*/
 extern bool mt_usb_is_device(void);

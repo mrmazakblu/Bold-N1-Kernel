@@ -66,6 +66,76 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
+//start add by sunshuai for Bright screen current limit  20181130
+
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_POLICY)
+extern int g_charge_is_screen_on;
+#endif
+//end add by sunshuai for Bright screen current limit   20181130
+//prize added by huarui, wireless charge soft start, 20190111-start
+#if defined(CONFIG_PRIZE_WLC_SOFT_START)
+#include <linux/of.h>
+static void wlc_cur_step_work_func(struct work_struct *data);
+static enum hrtimer_restart wlc_cur_step_timeout(struct hrtimer *timer);
+static int wlc_init(struct charger_manager *info);
+//static void wlc_parse_dts(struct charger_manager *info);
+
+struct wlc_info_t {
+	int chg_phase;//0:idle 1:increase 2:cc
+	int cur_step_count;
+	int cur_limit_input;
+	int cur_limit_output;
+
+	int cur_step_pattern_num;
+	int *cur_step_pattern_input;
+	int *cur_step_pattern_output;
+
+	struct hrtimer cur_step_timer;
+	struct work_struct cur_step_work;
+	struct wakeup_source cur_step_ws;
+	struct charger_manager *cm_info;
+};
+static struct wlc_info_t wlc_info;
+#endif
+//prize added by huarui, wireless charge soft start, 20190111-end
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+struct MT5715_wlc_t {
+     struct wakeup_source cur_step_ws_wk;
+	 struct hrtimer MT5715_cur_step_timer;
+	 int ret_ldo_status;
+	 int MT5715_up_status;
+	 int ret_ldo_status_last;
+	 int fast_vol_status;
+	 struct work_struct MT5715_cur_step_work;
+	 int MT5715_chg_phase;  //0:idle 1:increase 2:cc
+	 int MT5715_cur_step_count;
+	 int MT5715_wait_cunt;
+	 int *mt5715_input_vol;
+	 int *mt5715_vol;
+	 int  cur_step_pattern_num;
+	 int fake_sam_wait_cunt;
+	 struct charger_manager *mt5715_cm_info;
+};
+
+static struct MT5715_wlc_t MT5715_wlc_info;
+static void MT5715_cur_step_work_func(struct work_struct *data);
+static enum hrtimer_restart MT5715_cur_step_timeout(struct hrtimer *timer);
+static int MT5715_wlc_parse_dts(struct charger_manager *info);
+static int MT5715_init(struct charger_manager *info);
+extern int get_MT5715on_status(void);
+extern int get_lod_status(void);
+extern int  fast_sv(int temp);
+extern int get_is_samsung_charge (void);
+extern int  fast_sv_no_samsung(int temp);
+extern int set_is_samsung_charge(int temp);
+extern int confirm_MT5715_works(void);
+
+
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end
+
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -111,7 +181,6 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	pdata = &info->chg1_data;
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
-
 	/* AICL */
 	if (!mtk_is_pe30_running(info) && !mtk_pe20_get_is_connect(info) &&
 		!mtk_pe_get_is_connect(info) && !mtk_is_TA_support_pd_pps(info))
@@ -193,6 +262,31 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (info->chr_type == NONSTANDARD_CHARGER) {
 		pdata->input_current_limit = info->data.non_std_ac_charger_current;
 		pdata->charging_current_limit = info->data.non_std_ac_charger_current;
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+        if(MT5715_wlc_info.MT5715_cur_step_count > 0 && MT5715_wlc_info.MT5715_cur_step_count < MT5715_wlc_info.cur_step_pattern_num){
+			pdata->input_current_limit = MT5715_wlc_info.mt5715_input_vol[MT5715_wlc_info.MT5715_cur_step_count];
+			pdata->charging_current_limit = MT5715_wlc_info.mt5715_vol[MT5715_wlc_info.MT5715_cur_step_count];
+			chr_err("%s MT5715_wlc_info.mt5715_vol[%d] =%d\n", __func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.mt5715_vol[MT5715_wlc_info.MT5715_cur_step_count]);
+			chr_err("%s MT5715_wlc_info.mt5715_input_vol[%d] =%d\n", __func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.mt5715_input_vol[MT5715_wlc_info.MT5715_cur_step_count]);
+        }
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end
+
+
+//prize added by huarui, wireless charge soft start, 20190111-start
+#if defined(CONFIG_PRIZE_WLC_SOFT_START)
+	if ((info->chr_type == NONSTANDARD_CHARGER)&&wlc_info.cur_step_pattern_num){
+		if (pdata->input_current_limit > wlc_info.cur_limit_input){
+			pdata->input_current_limit = wlc_info.cur_limit_input;
+		}
+		if (pdata->charging_current_limit > wlc_info.cur_limit_output){
+			pdata->charging_current_limit = wlc_info.cur_limit_output;
+		}
+	}
+#endif
+//prize added by huarui, wireless charge soft start, 20190111-end
 	} else if (info->chr_type == STANDARD_CHARGER) {
 		pdata->input_current_limit = info->data.ac_charger_input_current;
 		pdata->charging_current_limit = info->data.ac_charger_current;
@@ -208,6 +302,44 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->input_current_limit = info->data.apple_2_1a_charger_current;
 		pdata->charging_current_limit = info->data.apple_2_1a_charger_current;
 	}
+
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+   if(info->step_info.current_step == STEP_T1){
+      if(pdata->charging_current_limit > 700000)
+         pdata->charging_current_limit = 700000;
+   }
+
+   if((info->step_info.current_step == STEP_T3) && (info->step_info.enter_step3_battery_percentage != -1)){
+	  if(info->step_info.step3_limit_timeout ==1){
+		  if(pdata->charging_current_limit > 1000000)
+		    pdata->charging_current_limit = 1000000;
+	  }
+	  else{
+		 if(pdata->charging_current_limit > 1700000)
+				pdata->charging_current_limit = 1700000;
+      }
+   }
+#endif
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 end
+
+
+//start add by sunshuai for Bright screen current limit  20181130
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_POLICY)
+    if (g_charge_is_screen_on){
+		if (pdata->charging_current_limit > 1000000){
+			pdata->charging_current_limit = 1000000;
+		}
+//modify by sunshuai 2019-03-16 for Bright screen charge input current limit start
+		if (pdata->input_current_limit > 1000000){
+			pdata->input_current_limit = 1000000;
+		}
+//modify by sunshuai 2019-03-16 for Bright screen charge input current limit end
+	}
+	printk("PRIZE charge current %d:%d\n",pdata->input_current_limit,pdata->charging_current_limit);
+#endif
+//end add by sunshuai for Bright screen current limit	   20181130
+
 
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE) && info->chr_type == STANDARD_HOST)
@@ -240,15 +372,22 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pdata->input_current_limit = info->pe4.pe4_input_current_limit_setting;
 	}
 
+/* begin, prize-lifenfen-20181217, add for input current regulation */
+#ifndef  CONFIG_PRIZE_CONSTANT_AICR_SUPPORT
+/* end, prize-lifenfen-20181217, add for input current regulation */
 	if (pdata->input_current_limit_by_aicl != -1 && !mtk_is_pe30_running(info) &&
 		!mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
 		!mtk_is_TA_support_pd_pps(info))
 		if (pdata->input_current_limit_by_aicl < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->input_current_limit_by_aicl;
+/* begin, prize-lifenfen-20181217, add for input current regulation */
+#endif
+/* end, prize-lifenfen-20181217, add for input current regulation */
 done:
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
 		pdata->charging_current_limit = 0;
+
 
 	ret = charger_dev_get_min_input_current(info->chg1_dev, &aicr1_min);
 	if (ret != -ENOTSUPP && pdata->input_current_limit < aicr1_min)
@@ -341,9 +480,64 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	charger_dev_enable(info->chg1_dev, charging_enable);
 }
 
+//prize added by huarui, ne6153 support, 20190111-start
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+extern void ne6153_chk_set_vout(int mv);
+extern int ne6153_get_tune_state(void);
+#endif
+//prize added by huarui, ne6153 support, 20190111-end
 static int mtk_switch_charging_plug_in(struct charger_manager *info)
 {
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+
+//prize added by huarui,ne6153 support, 20190111-start
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+	if (info->chr_type == NONSTANDARD_CHARGER){
+		ne6153_chk_set_vout(9000);
+	}
+#endif
+//prize added by huarui, ne6153 support, 20190111-end
+//prize added by huarui, wireless charge soft start, 20190111-start
+#if defined(CONFIG_PRIZE_WLC_SOFT_START)
+	if (info->chr_type == NONSTANDARD_CHARGER){
+		if (wlc_info.cur_step_pattern_num){
+			wlc_info.chg_phase = 1;
+			wlc_info.cur_step_count = 0;
+			wlc_info.cur_limit_input = 0;
+			wlc_info.cur_limit_output = 0;
+			__pm_stay_awake(&wlc_info.cur_step_ws);
+			schedule_work(&wlc_info.cur_step_work);
+		}
+	}
+#endif
+//prize added by huarui, wireless charge soft start, 20190111-end
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+	if (info->chr_type == NONSTANDARD_CHARGER){
+		MT5715_wlc_info.MT5715_chg_phase = 1;
+		MT5715_wlc_info.MT5715_cur_step_count =0;
+		MT5715_wlc_info.ret_ldo_status =0;
+		MT5715_wlc_info.MT5715_up_status =0;
+		MT5715_wlc_info.ret_ldo_status_last =0;
+		MT5715_wlc_info.fast_vol_status =0;
+		MT5715_wlc_info.MT5715_wait_cunt =0;
+		MT5715_wlc_info.fake_sam_wait_cunt =0;
+		__pm_stay_awake(&MT5715_wlc_info.cur_step_ws_wk);
+		schedule_work(&MT5715_wlc_info.MT5715_cur_step_work);
+	}
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end
+
+//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724 start
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+		info->step_info.current_step = STEP_INIT;
+		info->step_info.enter_step3_battery_percentage = -1;
+		info->step_info.step3_total_limit_time = 0;
+		info->step_info.step3_limit_timeout = 0;
+#endif
+//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724 end
+
 
 	swchgalg->state = CHR_CC;
 	info->polling_interval = CHARGING_INTERVAL;
@@ -359,6 +553,43 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 
 	swchgalg->total_charging_time = 0;
+	
+//prize added by huarui, wireless charge soft start, 20190111-start
+#if defined(CONFIG_PRIZE_WLC_SOFT_START)
+	wlc_info.chg_phase = 0;
+	wlc_info.cur_step_count = 0;
+	wlc_info.cur_limit_input = 0;
+	wlc_info.cur_limit_output = 0;
+	cancel_work_sync(&wlc_info.cur_step_work);
+	__pm_relax(&wlc_info.cur_step_ws);
+#endif
+//prize added by huarui, wireless charge soft start, 20190111-end
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+    MT5715_wlc_info.MT5715_chg_phase = 0 ;
+    MT5715_wlc_info.MT5715_cur_step_count = 0;
+	MT5715_wlc_info.ret_ldo_status =0;
+	MT5715_wlc_info.MT5715_up_status =0;
+	MT5715_wlc_info.fast_vol_status =0;
+	MT5715_wlc_info.ret_ldo_status_last =0;
+	MT5715_wlc_info.MT5715_wait_cunt =0;
+	MT5715_wlc_info.fake_sam_wait_cunt =0;
+	set_is_samsung_charge(0);
+	cancel_work_sync(&MT5715_wlc_info.MT5715_cur_step_work);
+    __pm_relax(&MT5715_wlc_info.cur_step_ws_wk);
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end
+
+//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724 start
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+		info->step_info.current_step = STEP_INIT;
+		info->step_info.enter_step3_battery_percentage = -1;
+		info->step_info.step3_total_limit_time =0;
+		info->step_info.step3_limit_timeout = 0;
+#endif
+//prize-add by sunshuai for vestel customer  requires charging to be controlled according to the battery specification 201900724 end
+
 
 	mtk_pe20_set_is_cable_out_occur(info, true);
 	mtk_pe_set_is_cable_out_occur(info, true);
@@ -418,7 +649,14 @@ static bool mtk_switch_check_charging_time(struct charger_manager *info)
 			chr_err("%s: SW safety timeout: %d sec > %d sec\n",
 				__func__, swchgalg->total_charging_time,
 				info->data.max_charging_time);
-			charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
+			if(info->chg1_dev) { //修改primary_chg未初始化，导致空指针导致死机问题，调用前增加判断
+				charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
+			} else {
+				chr_err("%s: SW safety timeout: %d sec > %d sec  info->chg1_dev is null\n",
+				__func__, swchgalg->total_charging_time,
+				info->data.max_charging_time);
+			}
+			swchgalg->total_charging_time = 0;
 			return false;
 		}
 	}
@@ -657,6 +895,18 @@ int mtk_switch_charging_init(struct charger_manager *info)
 		chr_err("*** Error : can't find primary charger [%s]***\n", "primary_chg");
 
 	mutex_init(&swch_alg->ichg_aicr_access_mutex);
+//prize added by huarui, wireless charge soft start, 20190111-start
+#if defined(CONFIG_PRIZE_WLC_SOFT_START)
+	wlc_init(info);
+#endif
+//prize added by huarui, wireless charge soft start, 20190111-end
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+    MT5715_init(info); 
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end
+
 
 	info->algorithm_data = swch_alg;
 	info->do_algorithm = mtk_switch_charging_run;
@@ -669,6 +919,314 @@ int mtk_switch_charging_init(struct charger_manager *info)
 	return 0;
 }
 
+//prize added by huarui, wireless charge soft start, 20190111-start
+#if defined(CONFIG_PRIZE_WLC_SOFT_START)
+static enum hrtimer_restart wlc_cur_step_timeout(struct hrtimer *timer)
+{
+	schedule_work(&wlc_info.cur_step_work);
 
+    return HRTIMER_NORESTART;
+}
+
+static void wlc_cur_step_work_func(struct work_struct *data)
+{
+	ktime_t ktime;
+
+	printk("WLC:%s,cur_step_count%d,chg_phase%d\n",__func__,wlc_info.cur_step_count,wlc_info.chg_phase);
+
+	if (wlc_info.chg_phase != 1){
+		wlc_info.cur_step_count = 0;
+		return;
+	}
+
+	wlc_info.cur_limit_input = *(wlc_info.cur_step_pattern_input + wlc_info.cur_step_count);//wlc_cur_limit_sel[wlc_cur_step_count][0];
+	wlc_info.cur_limit_output = *(wlc_info.cur_step_pattern_output + wlc_info.cur_step_count);//wlc_cur_limit_sel[wlc_cur_step_count][1];
+	swchg_select_charging_current_limit(wlc_info.cm_info);
+
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+	if (wlc_info.cur_step_count == 3){
+		if (ne6153_get_tune_state() >= 2 ){
+			wlc_info.cur_step_count++;
+		}else{
+			printk("ne6153 wlc wating\n");
+		}
+	}else{
+		wlc_info.cur_step_count++;
+	}
+#else
+	wlc_info.cur_step_count++;
+#endif
+	if (wlc_info.cur_step_count >= wlc_info.cur_step_pattern_num){
+		wlc_info.chg_phase = 2;
+		__pm_relax(&wlc_info.cur_step_ws);
+	}
+
+	if (wlc_info.chg_phase == 1){
+		ktime = ktime_set(5, 0);
+		hrtimer_start( &wlc_info.cur_step_timer, ktime, HRTIMER_MODE_REL );
+	}
+}
+
+static int wlc_parse_dts(struct charger_manager *info){
+	struct device_node *np = info->pdev->dev.of_node;
+	int i;
+	int *current_input;
+	int *current_output;
+
+	if (np != NULL){
+		if (!of_property_read_u32(np, "wlc_cur_step_pattern_num", &wlc_info.cur_step_pattern_num)) {
+			printk("WLC cur_step_pattern_num %d\n",wlc_info.cur_step_pattern_num);
+		}else{
+			wlc_info.cur_step_pattern_num = 0;
+			printk("WLC get cur_step_pattern_num failed\n");
+		}
+		if ((wlc_info.cur_step_pattern_num == 0)||(wlc_info.cur_step_pattern_num > 10)){
+			printk("WLC: invalid cur_step_pattern_num(%d)\n",wlc_info.cur_step_pattern_num);
+			return -EINVAL;
+		}
+
+		wlc_info.cur_step_pattern_input = devm_kzalloc(&info->pdev->dev, sizeof(int)*wlc_info.cur_step_pattern_num, GFP_KERNEL);
+		if (!wlc_info.cur_step_pattern_input){
+			return -ENOMEM;
+		}
+		current_input = wlc_info.cur_step_pattern_input;
+		for(i=0;i<wlc_info.cur_step_pattern_num;i++){
+			if (!of_property_read_u32_index(np,"wlc_cur_step_pattern_input",i,current_input)){
+				printk("WLC: input pattern %d %d\n",i,*current_input);
+				current_input++;
+			}else{
+				printk("WLC get cur_step_pattern_input failed\n");
+				break;
+			}
+		}
+
+		wlc_info.cur_step_pattern_output = devm_kzalloc(&info->pdev->dev, sizeof(int)*wlc_info.cur_step_pattern_num, GFP_KERNEL);
+		if (!wlc_info.cur_step_pattern_output){
+			return -ENOMEM;
+		}
+		current_output = wlc_info.cur_step_pattern_output;
+		for(i=0;i<wlc_info.cur_step_pattern_num;i++){
+			if (!of_property_read_u32_index(np,"wlc_cur_step_pattern_output",i,current_output)){
+				printk("WLC: output pattern %d %d\n",i,*current_output);
+				current_output++;
+			}else{
+				printk("WLC get cur_step_pattern_output failed\n");
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
+static int wlc_init(struct charger_manager *info){
+	wlc_parse_dts(info);
+	hrtimer_init( &wlc_info.cur_step_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL );
+	wlc_info.cur_step_timer.function = wlc_cur_step_timeout;
+	INIT_WORK(&wlc_info.cur_step_work, wlc_cur_step_work_func);
+	wakeup_source_init(&wlc_info.cur_step_ws, "wlc wakelock");
+	wlc_info.cm_info = info;
+	return 0;
+}
+#endif
+//prize added by huarui, wireless charge soft start, 20190111-end
+
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+static int MT5715_wlc_parse_dts(struct charger_manager *info){
+	struct device_node *np = info->pdev->dev.of_node;
+	int i;
+	int *current_input;
+	int *current_output;
+
+    chr_err("MT5715_wlc_parse_dts\n");//prize modify by sunshuai, Optimized log 20190316
+	
+	if (np != NULL){
+		if (!of_property_read_u32(np, "MT5715_wlc_cur_step_num", &MT5715_wlc_info.cur_step_pattern_num)) {
+			chr_err("MT5715 WLC cur_step_pattern_num %d\n",MT5715_wlc_info.cur_step_pattern_num);
+		}else{
+			MT5715_wlc_info.cur_step_pattern_num = 0;
+			chr_err("MT5715 WLC get cur_step_pattern_num failed\n");
+		}
+		
+		if ((MT5715_wlc_info.cur_step_pattern_num == 0)||(MT5715_wlc_info.cur_step_pattern_num > 10)){
+			chr_err("MT5715 WLC: invalid cur_step_pattern_num(%d)\n",MT5715_wlc_info.cur_step_pattern_num);
+			return -EINVAL;
+		}
+
+		MT5715_wlc_info.mt5715_input_vol = devm_kzalloc(&info->pdev->dev, sizeof(int)*MT5715_wlc_info.cur_step_pattern_num, GFP_KERNEL);
+		if (!MT5715_wlc_info.mt5715_input_vol){
+			return -ENOMEM;
+		}
+		
+		current_input = MT5715_wlc_info.mt5715_input_vol;
+		for(i=0;i<MT5715_wlc_info.cur_step_pattern_num;i++){
+			if (!of_property_read_u32_index(np,"MT5715_wlc_cur_step_input",i,current_input)){
+				chr_err("MT5715 WLC: input pattern %d %d\n",i,*current_input);
+				current_input++;
+			}else{
+				chr_err("MT5715 WLC get cur_step_pattern_input failed\n");
+				break;
+			}
+		}
+
+		MT5715_wlc_info.mt5715_vol = devm_kzalloc(&info->pdev->dev, sizeof(int)*MT5715_wlc_info.cur_step_pattern_num, GFP_KERNEL);
+		if (!MT5715_wlc_info.mt5715_vol){
+			return -ENOMEM;
+		}
+		current_output = MT5715_wlc_info.mt5715_vol;
+		for(i=0;i<MT5715_wlc_info.cur_step_pattern_num;i++){
+			if (!of_property_read_u32_index(np,"MT5715_wlc_cur_step_output",i,current_output)){
+				chr_err("MT5715 WLC: output pattern %d %d\n",i,*current_output);
+				current_output++;
+			}else{
+				chr_err("MT5715 WLC get cur_step_pattern_output failed\n");
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
+
+static enum hrtimer_restart MT5715_cur_step_timeout(struct hrtimer *timer)
+{
+	schedule_work(&MT5715_wlc_info.MT5715_cur_step_work);
+
+    return HRTIMER_NORESTART;
+}
+
+
+static void MT5715_cur_step_work_func(struct work_struct *data)
+{
+	ktime_t ktime;
+
+	chr_err("before chose %s,cur_step_count%d,chg_phase%d is_samsung_charge %d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase,get_is_samsung_charge());
+
+	if (MT5715_wlc_info.MT5715_chg_phase != 1){
+		return;
+	}	
+
+	MT5715_wlc_info.ret_ldo_status_last = MT5715_wlc_info.ret_ldo_status;
+
+	MT5715_wlc_info.MT5715_up_status = get_MT5715on_status();
+	MT5715_wlc_info.ret_ldo_status = get_lod_status()|confirm_MT5715_works();//prize added by sunshuai Update the way to judge whether the wireless charging chip 5715 is working,2019-06-21
+	
+
+	if(MT5715_wlc_info.ret_ldo_status == 0 ){
+		chr_err("%s,MT5715 not up ,cur_step_count%d,chg_phase%d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase);
+		MT5715_wlc_info.MT5715_cur_step_count =0;
+		MT5715_wlc_info.MT5715_wait_cunt = 0;
+		MT5715_wlc_info.fake_sam_wait_cunt =0;
+		return;
+	}
+
+
+	if((MT5715_wlc_info.MT5715_cur_step_count >= 7)){
+		swchg_select_charging_current_limit(MT5715_wlc_info.mt5715_cm_info);
+		MT5715_wlc_info.MT5715_chg_phase = 2;
+		MT5715_wlc_info.MT5715_cur_step_count =7;
+		__pm_relax(&MT5715_wlc_info.cur_step_ws_wk);
+		chr_err("%s,current step sucess,cur_step_count%d,chg_phase%d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase);
+		return;
+	}
+
+
+	if(MT5715_wlc_info.MT5715_wait_cunt > 3){
+		chr_err("%s,wait MT5715 ,cur_step_count%d,chg_phase%d wait_cunt=%d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase,MT5715_wlc_info.MT5715_wait_cunt);
+		if(get_is_samsung_charge()==0){
+			if(MT5715_wlc_info.fake_sam_wait_cunt == 0){
+				fast_sv_no_samsung(9000);
+				MT5715_wlc_info.fake_sam_wait_cunt++;
+				MT5715_wlc_info.MT5715_chg_phase = 1;
+				MT5715_wlc_info.MT5715_wait_cunt =0;
+			}
+			else{//fake Samsung protocol wireless charging failure scenario
+				MT5715_wlc_info.MT5715_chg_phase = 3;
+		        __pm_relax(&MT5715_wlc_info.cur_step_ws_wk);		 
+				chr_err("%s,fake Samsung protocol set VFC 9V fail\n",__func__);
+			}
+		}
+		else{//Samsung protocol wireless charging failure scenario
+			MT5715_wlc_info.MT5715_chg_phase = 3;
+		    __pm_relax(&MT5715_wlc_info.cur_step_ws_wk);
+			chr_err("%s,Samsung protocol set VFC 9V fail\n",__func__);
+			return;
+		}
+	}
+
+//prize added by sunshuai, After the fake Samsung protocol board failed to boost 9V, try again, 20190302-start 
+	if((MT5715_wlc_info.fake_sam_wait_cunt !=0) && (get_is_samsung_charge()==0)){
+		 chr_err("%s MT5715_cur_step_count=%d  MT5715_wait_cunt =%d \n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_wait_cunt);
+		 fast_sv_no_samsung(9000);
+    }
+//prize added by sunshuai, After the fake Samsung protocol board failed to boost 9V, try again, 20190302-end 
+
+    MT5715_wlc_info.fast_vol_status = fast_sv(9000);
+
+	if(MT5715_wlc_info.MT5715_cur_step_count == 3){
+       if(MT5715_wlc_info.ret_ldo_status == 1){
+           MT5715_wlc_info.MT5715_cur_step_count++;
+		   MT5715_wlc_info.MT5715_wait_cunt = 0;
+	   }
+	   else{
+	   	   MT5715_wlc_info.MT5715_wait_cunt++;
+           chr_err("%s,wait MT5715 ldo on, cur_step_count%d,chg_phase%d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase);
+	   }
+	   swchg_select_charging_current_limit(MT5715_wlc_info.mt5715_cm_info);
+	}
+	else if(MT5715_wlc_info.MT5715_cur_step_count == 5){
+       if(MT5715_wlc_info.ret_ldo_status == 1 && MT5715_wlc_info.fast_vol_status ==1){
+           MT5715_wlc_info.MT5715_cur_step_count++;
+		   MT5715_wlc_info.MT5715_wait_cunt = 0;
+	   }
+	   else{
+	   	   MT5715_wlc_info.MT5715_wait_cunt++;
+           chr_err("%s,wait MT5715 step up 9V, cur_step_count%d,chg_phase%d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase);
+	   }
+	   swchg_select_charging_current_limit(MT5715_wlc_info.mt5715_cm_info);
+	}else{
+	     MT5715_wlc_info.MT5715_cur_step_count++;
+	}
+
+	chr_err("%s,ret_ldo_status%d,ret_ldo_status_last%d  fast_vol_status =%d\n",__func__,MT5715_wlc_info.ret_ldo_status,MT5715_wlc_info.ret_ldo_status_last,MT5715_wlc_info.fast_vol_status);
+
+	chr_err("after chose %s,cur_step_count%d,chg_phase%d\n",__func__,MT5715_wlc_info.MT5715_cur_step_count,MT5715_wlc_info.MT5715_chg_phase);
+
+    //swchg_select_charging_current_limit(MT5715_wlc_info.mt5715_cm_info);  //prize modify by sunshuai Change the frequency of the chip to increase the maximum current before trying 9V,2019-06-21
+	
+	if (MT5715_wlc_info.MT5715_chg_phase == 1) {
+		if(MT5715_wlc_info.MT5715_cur_step_count < 3){
+			ktime = ktime_set(3, 0);
+		}
+		else{
+			ktime = ktime_set(2, 0);
+		}
+		hrtimer_start(&MT5715_wlc_info.MT5715_cur_step_timer, ktime, HRTIMER_MODE_REL );
+	}
+}
+
+
+static int MT5715_init(struct charger_manager *info){
+
+    MT5715_wlc_parse_dts(info);
+    hrtimer_init( &MT5715_wlc_info.MT5715_cur_step_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL );
+	MT5715_wlc_info.MT5715_cur_step_timer.function = MT5715_cur_step_timeout;
+	INIT_WORK(&MT5715_wlc_info.MT5715_cur_step_work, MT5715_cur_step_work_func);
+
+	MT5715_wlc_info.MT5715_chg_phase = 0;  //0:idle 1:increase 2:cc
+    MT5715_wlc_info.MT5715_cur_step_count = 0;
+	MT5715_wlc_info.fast_vol_status = 0;
+	MT5715_wlc_info.ret_ldo_status = 0;
+	MT5715_wlc_info.MT5715_up_status =0;
+	MT5715_wlc_info.MT5715_wait_cunt =0;
+	MT5715_wlc_info.fake_sam_wait_cunt =0;
+	MT5715_wlc_info.mt5715_cm_info = info;
+
+	wakeup_source_init(&MT5715_wlc_info.cur_step_ws_wk, "MT5715 wakelock");
+    return 0;
+}
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end
 
 

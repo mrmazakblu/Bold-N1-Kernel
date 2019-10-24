@@ -35,6 +35,12 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb_gp/public
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/tlrpmb/public
 endif
 
+# prize added by chenjiaxi, TrustKernel TEE, 20190111-start
+ifeq ($(CONFIG_TRUSTKERNEL_TEE_RPMB_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/tkcore/include/linux
+endif
+# prize added by chenjiaxi, TrustKernel TEE, 20190111-end
+
 #
 # Attention:
 # Enabling/using CFG_RPMB_KEY_PROGRAMED_IN_KERNEL means accepting the risk of revealing key in

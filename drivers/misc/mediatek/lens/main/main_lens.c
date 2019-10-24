@@ -147,7 +147,7 @@ static int g_regVCAMAFEn;
 
 void AFRegulatorCtrl(int Stage)
 {
-	LOG_INF("AFIOC_S_SETPOWERCTRL regulator_put %p\n", regVCAMAF);
+	LOG_INF("AFIOC_S_SETPOWERCTRL regulator_put %p  Stage=%d \n", regVCAMAF,Stage);
 
 	if (Stage == 0) {
 		if (regVCAMAF == NULL) {
@@ -163,7 +163,7 @@ void AFRegulatorCtrl(int Stage)
 				if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k71v1_64_bsp_fhdp", 17) == 0)
 					regVCAMAF = regulator_get(lens_device, "vldo28");
 				else
-					regVCAMAF = regulator_get(lens_device, "vcamaf");
+					regVCAMAF = regulator_get(lens_device, "vldo28"); // vcamaf  /*prize  add  for af by zhuzhengjiang    20190215-begin*/
 
 				LOG_INF("[Init] regulator_get %p\n", regVCAMAF);
 
@@ -175,8 +175,9 @@ void AFRegulatorCtrl(int Stage)
 			int Status = regulator_is_enabled(regVCAMAF);
 
 			LOG_INF("regulator_is_enabled %d\n", Status);
-
+			/*prize  add  for af by zhuzhengjiang    20190215-begin*/
 			if (!Status) {
+			/*prize  add  for af by zhuzhengjiang    20190215-begin*/
 				Status = regulator_set_voltage(regVCAMAF, 2800000, 2800000);
 
 				LOG_INF("regulator_set_voltage %d\n", Status);
@@ -201,8 +202,10 @@ void AFRegulatorCtrl(int Stage)
 			int Status = regulator_is_enabled(regVCAMAF);
 
 			LOG_INF("regulator_is_enabled %d\n", Status);
-
+			/*prize  add  for af by zhuzhengjiang    20190215-begin*/
 			if (Status) {
+
+			/*prize  add  for af by zhuzhengjiang    20190215-begin*/
 				LOG_INF("Camera Power enable\n");
 
 				Status = regulator_disable(regVCAMAF);

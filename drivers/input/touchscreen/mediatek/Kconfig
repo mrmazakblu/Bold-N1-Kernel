@@ -30,6 +30,19 @@ config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
 	  the reported coordination to diagonal position.
 
 	  If unsure, say Y.
+	  
+#prize-add msg2836-pengzhipeng-20180827-start
+config TOUCHSCREEN_MTK_MSG2836
+	bool "MSG2836 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have MSG2836 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+#prize-add msg2836-pengzhipeng-20180827-end
 
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
@@ -44,6 +57,22 @@ config TOUCHSCREEN_MTK_GT1151
 
 source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
 
+#prize-add HX83112-pengguangyi-20190119-start
+
+config TOUCHSCREEN_MTK_HX83112
+	bool "HX83112 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have HX83112 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/HX83112/Kconfig"
+
+#prize-add HX83112-pengguangyi-20190119-end
 config TOUCHSCREEN_MTK_GT5688
 	bool "GT1151 for Mediatek package"
 	default n
@@ -122,4 +151,31 @@ config TOUCHSCREEN_MTK_NT36xxx
 
 source "drivers/input/touchscreen/mediatek/NT36xxx/Kconfig"
 
+###prize
+config TOUCHSCREEN_MTK_GT1X_V14
+	bool "GT1X_V14 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have GT1X_V14 touch panel.
+	  If unsure, say N.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+#prize added by chenjiaxi, synaptics_dsx driver, 20190111-start
+source "drivers/input/touchscreen/mediatek/synaptics_dsx/Kconfig"
+#prize added by chenjiaxi, synaptics_dsx driver, 20190111-end
+
+config TOUCHSCREEN_MTK_FOCALTECH_TS_V22
+	bool "FT8006 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have FT8006 touch panel.
+	  If unsure, say N.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+# begin, prize-lifenfen-20181206, add for new touchscreen goodix_gtx8
+source "drivers/input/touchscreen/mediatek/goodix_gtx8/Kconfig"
+# end, prize-lifenfen-20181206, add for new touchscreen goodix_gtx8
 endif
+

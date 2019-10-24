@@ -23,6 +23,10 @@
 #include <mt_soc_afe_control.h>
 #endif
 
+/* prize added by lifenfen,PMIC_HOMEKEY kpd autotest for factorymode, 20190329 begin */
+#define KPD_PMIC_RSTKEY_MAP
+/* prize added by lifenfen,PMIC_HOMEKEY kpd autotest for factorymode, 20190329 end */
+
 #ifdef CONFIG_KPD_PWRKEY_USE_EINT
 static u8 kpd_pwrkey_state = !KPD_PWRKEY_POLARITY;
 #endif

@@ -37,6 +37,11 @@
 #include "inc/mt6370_pmu_fled.h"
 #include "inc/mt6370_pmu_charger.h"
 #include "inc/mt6370_pmu.h"
+/* begin, prize-lifenfen-20181218, add for otg en pin */
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#endif
+/* end, prize-lifenfen-20181218, add for otg en pin */
 
 #define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.24_MTK"
 
@@ -132,6 +137,21 @@ struct mt6370_pmu_charger_data {
 	struct work_struct chgdet_work;
 #endif /* CONFIG_TCPC_CLASS */
 };
+
+/* begin, prize-sunshuai-20190213, add for otg en pin */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+struct otg_en_6370 {
+	struct pinctrl *pinctrl_gpios;
+	struct pinctrl_state *pins_default;
+	struct pinctrl_state *pins_otg_high, *pins_otg_low;
+	bool gpio_otg_prepare;
+};
+#endif
+/* end, prize-sunshuai-20190213, add for otg en pin */
+
+
+
+
 
 /* These default values will be used if there's no property in dts */
 static struct mt6370_pmu_charger_desc mt6370_default_chg_desc = {
@@ -314,6 +334,14 @@ static int mt6370_enable_charging(struct charger_device *chg_dev, bool en);
 #ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
 static int mt6370_inform_psy_changed(struct mt6370_pmu_charger_data *chg_data);
 #endif
+
+/* begin, prize-sunshuai-20190213, add for otg en pin */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+struct otg_en_6370 otg_en;
+#endif
+/* end, prize-sunshuai-20190213, add for otg en pin */
+
+
 
 static inline void mt6370_chg_irq_set_flag(
 	struct mt6370_pmu_charger_data *chg_data, u8 *irq, u8 mask)
@@ -1935,6 +1963,37 @@ static int mt6370_set_otg_current_limit(struct charger_device *chg_dev, u32 uA)
 	return ret;
 }
 
+/* begin, prize-sunshuai-20190213, add for otg en pin */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+int set_otg_gpio(int en){
+
+	int ret =0;
+	
+    if (otg_en.gpio_otg_prepare) {
+		if (en) {
+			pinctrl_select_state(otg_en.pinctrl_gpios, otg_en.pins_otg_high);
+			printk("%s: set w_otg_en PIN to high\n", __func__);
+			ret =0;
+		}
+		else {
+			pinctrl_select_state(otg_en.pinctrl_gpios, otg_en.pins_otg_low);
+			printk("%s: set w_otg_en PIN to low\n", __func__);
+			ret =0;
+		}
+	}
+	else {
+		printk("%s:, error, gpio otg not prepared\n", __func__);
+		ret =-1;
+	}
+	return ret;
+}
+
+EXPORT_SYMBOL(set_otg_gpio);
+#endif
+/* end, prize-sunshuai-20190213, add for otg en pin */
+
+
+
 static int mt6370_enable_otg(struct charger_device *chg_dev, bool en)
 {
 	int ret = 0;
@@ -2488,6 +2547,75 @@ static int mt6370_get_ibus(struct charger_device *chg_dev, u32 *ibus)
 	dev_info(chg_data->dev, "%s: ibus = %dmA\n", __func__, adc_ibus / 1000);
 	return ret;
 }
+
+//start add by sunshuai 2019-04-03 for charge  current  show
+int mt6370_get_ibat(struct charger_device *chg_dev, u32 *ibus)
+{
+     	int i = 0, ret = 0;
+		int ret_ibat =0;
+		u32 ichg = 0, aicr = 0, mivr = 0, ieoc = 0, cv = 0;
+		bool chg_en = 0;
+		int adc_vsys = 0, adc_vbat = 0, adc_ibat = 0, adc_ibus = 0;
+		int adc_vbus = 0;
+		enum mt6370_charging_status chg_status = MT6370_CHG_STATUS_READY;
+		u8 chg_stat = 0, chg_ctrl[2] = {0};
+		struct mt6370_pmu_charger_data *chg_data =
+			dev_get_drvdata(&chg_dev->dev);
+	
+		ret = mt6370_get_ichg(chg_dev, &ichg);
+		ret = mt6370_get_aicr(chg_dev, &aicr);
+		ret = mt6370_get_charging_status(chg_data, &chg_status);
+		ret = mt6370_get_ieoc(chg_data, &ieoc);
+		ret = mt6370_get_mivr(chg_data, &mivr);
+		ret = mt6370_get_cv(chg_dev, &cv);
+		ret = mt6370_is_charging_enable(chg_data, &chg_en);
+		ret = mt6370_get_adc(chg_data, MT6370_ADC_VSYS, &adc_vsys);
+		ret = mt6370_get_adc(chg_data, MT6370_ADC_VBAT, &adc_vbat);
+		ret = mt6370_get_adc(chg_data, MT6370_ADC_IBAT, &adc_ibat);
+		ret = mt6370_get_adc(chg_data, MT6370_ADC_IBUS, &adc_ibus);
+		ret = mt6370_get_adc(chg_data, MT6370_ADC_VBUS_DIV5, &adc_vbus);
+	
+		chg_stat = mt6370_pmu_reg_read(chg_data->chip, MT6370_PMU_REG_CHGSTAT1);
+		ret = mt6370_pmu_reg_block_read(chg_data->chip, MT6370_PMU_REG_CHGCTRL1,
+			2, chg_ctrl);
+	
+		if (chg_status == MT6370_CHG_STATUS_FAULT) {
+			for (i = 0; i < ARRAY_SIZE(mt6370_chg_reg_addr); i++) {
+				ret = mt6370_pmu_reg_read(chg_data->chip,
+					mt6370_chg_reg_addr[i]);
+				if (ret < 0)
+					return ret;
+	
+				dev_dbg(chg_data->dev, "%s: reg[0x%02X] = 0x%02X\n",
+					__func__, mt6370_chg_reg_addr[i], ret);
+			}
+		}
+	
+		dev_info(chg_data->dev,
+			"%s: ICHG = %dmA, AICR = %dmA, MIVR = %dmV, IEOC = %dmA, CV = %dmV\n",
+			__func__, ichg / 1000, aicr / 1000, mivr / 1000,
+			ieoc / 1000, cv / 1000);
+	
+		dev_info(chg_data->dev,
+			"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA, VBUS = %dmV\n",
+			__func__, adc_vsys / 1000, adc_vbat / 1000,
+			adc_ibat / 1000, adc_ibus / 1000, adc_vbus / 1000);
+	
+		dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s, CHG_STAT = 0x%02X\n",
+			__func__, chg_en, mt6370_chg_status_name[chg_status], chg_stat);
+	
+		dev_info(chg_data->dev, "%s: CHG_CTRL1 = 0x%02X, CHG_CTRL2 = 0x%02X\n",
+			__func__, chg_ctrl[0], chg_ctrl[1]);
+	
+		ret = 0;
+		*ibus = adc_ibus / 1000;
+		ret_ibat = adc_ibat / 1000;
+		return ret_ibat;
+
+}
+EXPORT_SYMBOL(mt6370_get_ibat);
+//end add by sunshuai 2019-04-03 for charge  current  show
+
 
 static int mt6370_plug_out(struct charger_device *chg_dev)
 {
@@ -3505,6 +3633,13 @@ static inline int mt_parse_dt(struct device *dev,
 	struct mt6370_pmu_charger_desc *chg_desc = NULL;
 	struct device_node *np = dev->of_node;
 	struct i2c_client *i2c = chg_data->chip->i2c;
+	
+/* begin, prize-sunshuai-20190213, add for otg en pin */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+	int ret;
+#endif
+/* end, prize-sunshuai-20190213, add for otg en pin */
+
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 	chg_data->chg_desc = &mt6370_default_chg_desc;
@@ -3572,6 +3707,41 @@ static inline int mt_parse_dt(struct device *dev,
 	chg_desc->en_polling = of_property_read_bool(np, "enable_polling");
 
 	chg_data->chg_desc = chg_desc;
+
+/* begin, prize-sunshuai-20190213, add for otg en pin */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+   otg_en.pinctrl_gpios = devm_pinctrl_get(dev);
+   if (IS_ERR(otg_en.pinctrl_gpios)) {
+		ret = PTR_ERR(otg_en.pinctrl_gpios);
+		printk("%s can't find chg_data pinctrl\n", __func__);
+		return ret;
+   }
+   
+	otg_en.pins_default = pinctrl_lookup_state(otg_en.pinctrl_gpios, "default");
+	if (IS_ERR(otg_en.pins_default)) {
+		ret = PTR_ERR(otg_en.pins_default);
+		printk("%s can't find chg_data pinctrl default\n", __func__);
+		/* return ret; */
+	}
+
+	otg_en.pins_otg_high = pinctrl_lookup_state(otg_en.pinctrl_gpios, "charger_otg_on");
+	if (IS_ERR(otg_en.pins_otg_high)) {
+		ret = PTR_ERR(otg_en.pins_otg_high);
+		printk("%s  can't find chg_data pinctrl otg high\n", __func__);
+		return ret;
+	}
+
+	otg_en.pins_otg_low = pinctrl_lookup_state(otg_en.pinctrl_gpios, "charger_otg_off");
+	if (IS_ERR(otg_en.pins_otg_low)) {
+		ret = PTR_ERR(otg_en.pins_otg_low);
+		printk("%s  can't find chg_data pinctrl otg low\n", __func__);
+		return ret;
+	}
+
+	otg_en.gpio_otg_prepare = true;
+#endif
+/* end, prize-sunshuai-20190213, add for otg en pin */
+
 
 	return 0;
 }

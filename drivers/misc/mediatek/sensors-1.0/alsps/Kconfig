@@ -18,6 +18,11 @@ config MTK_AUTO_DETECT_ALSPS
 source "drivers/misc/mediatek/sensors-1.0/alsps/alspshub/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36558/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36652/Kconfig"
+#prize-add stk3x1x-new-pengzhipeng-20180827-start
+source "drivers/misc/mediatek/sensors-1.0/alsps/stk3x1x-new/Kconfig"
+#prize-add stk3x1x-new-pengzhipeng-20180827-end
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36652-new/Kconfig"
-source "drivers/misc/mediatek/sensors-1.0/alsps/epl2182/Kconfig"
-source "drivers/misc/mediatek/sensors-1.0/alsps/ltr303/Kconfig"
+
+
+###prize
+source "drivers/misc/mediatek/sensors-1.0/alsps/ltr559/Kconfig"

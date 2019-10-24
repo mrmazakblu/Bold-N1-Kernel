@@ -76,6 +76,13 @@
 #define NETLINK_FGD 26
 
 
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+#if defined(CONFIG_MTK_CW2015_SUPPORT)
+extern int g_cw2015_capacity;
+extern int g_cw2015_vol;
+extern int cw2015_exit_flag;
+#endif
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 /************ adc_cali *******************/
 #define ADC_CALI_DEVNAME "MT_pmic_adc_cali"
 #define TEST_ADC_CALI_PRINT _IO('k', 0)
@@ -334,6 +341,15 @@ void battery_update_psd(struct battery_data *bat_data)
 {
 	bat_data->BAT_batt_vol = battery_get_bat_voltage();
 	bat_data->BAT_batt_temp = battery_get_bat_temperature();
+	
+//prize-sunshuai-20191017 When the battery probe is not running complete, the battery temperature returns to 25 degrees. start
+#if defined(CONFIG_PROJECT_KOOBEE_K6319)
+	if (is_battery_init_done() == false){
+	   bat_data->BAT_batt_temp = 25;
+	   printk(" battery_update_psd battry probe not complete bat_data->BAT_batt_temp =%d \n",bat_data->BAT_batt_temp);
+	}
+#endif
+//prize-sunshuai-20191017 When the battery probe is not running complete, the battery temperature returns to 25 degrees. end
 }
 
 static int battery_get_property(struct power_supply *psy,
@@ -368,6 +384,12 @@ static int battery_get_property(struct power_supply *psy,
 			val->intval = gm.fixed_uisoc;
 		else
 			val->intval = data->BAT_CAPACITY;
+	//prize-add cw2015-pengzhipeng-20171122-start        
+	#if defined(CONFIG_MTK_CW2015_SUPPORT)        
+		if(cw2015_exit_flag == 1)          
+			val->intval = g_cw2015_capacity;	    
+	#endif       	
+   //prize-add cw2015-pengzhipeng-20171122-end
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		b_ischarging = gauge_get_current(&fgcurrent);
@@ -391,6 +413,12 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = data->BAT_batt_vol * 1000;
+	//prize-add cw2015-pengzhipeng-20171122-start	    
+	#if defined(CONFIG_MTK_CW2015_SUPPORT)	    
+		if(cw2015_exit_flag == 1)	        
+			val->intval = g_cw2015_vol * 1000;
+	#endif			
+	//prize-add cw2015-pengzhipeng-20171122-end
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = data->BAT_batt_temp * 10;
@@ -1269,9 +1297,12 @@ int force_get_tbat_internal(bool update)
 
 int force_get_tbat(bool update)
 {
+/* prize added by lifenfen, turn off NTC , 20190513 begin */
+#ifndef FIXED_TBAT_25
 	int bat_temperature_val = 0;
 	int counts = 0;
-
+#endif
+/* prize added by lifenfen, turn off NTC , 20190513 end */
 	if (is_fg_disabled()) {
 		bm_debug("[%s] fixed TBAT=25 t\n",
 			__func__);
@@ -3003,6 +3034,104 @@ static DEVICE_ATTR(
 	Power_Off_Voltage, 0664,
 	show_Power_Off_Voltage, store_Power_Off_Voltage);
 
+//start add by sunshuai 2019-04-03 for charge  current  show
+extern int get_6370_ibat_interface(void);
+//end add by sunshuai 2019-04-03 for charge  current  show
+
+//======prize-add-PrizeFactoryTest_Charge-by-liup-20150413-start==========
+static ssize_t show_charging_current_value(struct device *dev,struct device_attribute *attr, char *buf)
+{
+#if defined(CONFIG_MTK_BQ24296_SUPPORT)||defined(CONFIG_CHARGER_HL7005)||defined(CONFIG_MT6370_PMU_CHARGER) \
+	|| defined(CONFIG_OZ115_SUPPORT)
+ 	int ret_value = 0;
+    int ibat_6370 =0;
+	//if (battery_meter_get_battery_current_sign() == KAL_TRUE)
+	if (upmu_get_rgs_chrdet()){
+		ret_value = battery_get_bat_current_mA()+50;
+		bm_err("[EM] FG_Battery_CurrentConsumption : %d mA\n", ret_value);
+//======prize-modify-PrizeFactoryTest_Charge-by-sunshuai-Processing when the current is negative-20190305-start==========
+		if(ret_value < 0)
+			ret_value =0;
+
+//start add by sunshuai 2019-04-03 for charge  current  show
+		if(ret_value == 0){
+			ibat_6370 = get_6370_ibat_interface();
+			ret_value = ibat_6370;
+		}
+//start add by sunshuai 2019-04-03 for charge  current  show
+
+		bm_err("[EM] ibat_6370 : %d mA, ret_value=%d \n", ibat_6370,ret_value);
+//======prize-modify-PrizeFactoryTest_Charge-by-sunshuai-Processing when the current is negative-20190305-end==========
+	}	
+	return sprintf(buf, "%u\n", ret_value);
+#else
+	int ichg = pmic_get_charging_current();
+    bm_info("show_charging_current_value ICharging= %d\n",ichg);
+	if (upmu_get_rgs_chrdet()){
+		if (ichg >= 0){
+			return sprintf(buf, "%d\n", ichg);
+		}else{
+			return sprintf(buf, "%d\n", 0-ichg);
+		}
+	}else{
+		return sprintf(buf, "0\n");
+	}
+#endif
+}
+static ssize_t store_charging_current_value(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+//	sscanf(buf, "%u", &g_call_state);
+    bm_notice("store_charging_current_value\n");    
+    return size;
+}
+static DEVICE_ATTR(charging_current_value, 0664, show_charging_current_value, store_charging_current_value);
+//======prize-add-PrizeFactoryTest_Charge-by-liup-20150413-end==========
+//PRIZE+wireless-charger-PrizeFactoryTest
+static ssize_t show_charger_type(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	switch(mt_get_charger_type()){
+		case CHARGER_UNKNOWN:
+			return sprintf(buf, "CHARGER_UNKNOWN\n");
+			break;
+		case STANDARD_HOST:
+			return sprintf(buf, "STANDARD_HOST\n");
+			break;
+		case CHARGING_HOST:
+			return sprintf(buf, "CHARGING_HOST\n");
+			break;
+		case NONSTANDARD_CHARGER:
+			return sprintf(buf, "NONSTANDARD_CHARGER\n");
+			break;
+		case STANDARD_CHARGER:
+			return sprintf(buf, "STANDARD_CHARGER\n");
+			break;
+		case APPLE_2_1A_CHARGER:
+			return sprintf(buf, "APPLE_2_1A_CHARGER\n");
+			break;
+		case APPLE_1_0A_CHARGER:
+			return sprintf(buf, "APPLE_1_0A_CHARGER\n");
+			break;
+		case APPLE_0_5A_CHARGER:
+			return sprintf(buf, "APPLE_0_5A_CHARGER\n");
+			break;
+		case WIRELESS_CHARGER:
+			return sprintf(buf, "WIRELESS_CHARGER\n");
+			break;
+		default:
+			return sprintf(buf, "UNDEFINED\n");
+			break;
+	}
+}
+static ssize_t store_charger_type(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+//	sscanf(buf, "%u", &g_call_state);
+    bm_notice("store_charging_current_value\n");    
+    return size;
+}
+static DEVICE_ATTR(charger_type, 0664, show_charger_type, store_charger_type);
+//PRIZE-wireless-charger-PrizeFactoryTest-
+
+
 
 static int battery_callback(
 	struct notifier_block *nb, unsigned long event, void *v)
@@ -3014,6 +3143,8 @@ static int battery_callback(
 		{
 /* CHARGING FULL */
 			notify_fg_chr_full();
+			//prize-add wyq 20181121 update battery full status to be shown in systemui
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 		}
 		break;
 	case CHARGER_NOTIFY_START_CHARGING:
@@ -3485,6 +3616,12 @@ static int __init battery_probe(struct platform_device *dev)
 		&dev_attr_shutdown_condition_enable);
 	ret_device_file = device_create_file(&(dev->dev),
 		&dev_attr_reset_battery_cycle);
+	//======prize-add-PrizeFactoryTest_Charge-by-liup-20150413-start==========
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_charging_current_value);
+	//======prize-add-PrizeFactoryTest_Charge-by-liup-20150413-end==========
+	//======prize-add-PrizeFactoryTest_wireless==========
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_charger_type);
+	//======prize-add-PrizeFactoryTest_wireless==========
 
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		fg_swocv_v =

@@ -7,3 +7,10 @@ config MTK_RTC
 	  clock (most often in the form of an
 	  integrated circuit) that keeps track
 	  of the current time.
+# prize added by pengzhipeng, EMMC TEST, 20190321-start
+config PRIZE_DDR_TEST
+	bool "MediaTek Real Time Clock Support"
+	default n
+	---help---
+	  PRIZE_DDR_TEST driver
+# prize added by chenjiaxi, EMMC TEST, 20190321-end

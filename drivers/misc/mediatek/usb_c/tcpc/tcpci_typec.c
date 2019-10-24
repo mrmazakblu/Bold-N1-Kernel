@@ -55,6 +55,23 @@ static const char *const typec_wait_ps_name[] = {
 };
 #endif	/* TYPEC_INFO2_ENABLE */
 
+/* begin, prize-sunshuai-20190213, add for Wireless charging and OTG switching */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+extern int wrx_disable_vout(void);
+extern int set_otg_gpio(int en);
+#endif
+/* end, prize-sunshuai-20190213, add for Wireless charging and OTG switching */
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start	
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+extern  int  ldo_disable(void);
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end	
+
+
+
+
+
 static inline void typec_wait_ps_change(struct tcpc_device *tcpc_dev,
 					enum TYPEC_WAIT_PS_STATE state)
 {
@@ -1940,10 +1957,32 @@ int tcpc_typec_handle_cc_change(struct tcpc_device *tcpc_dev)
 		|| tcpc_dev->typec_state == typec_attachwait_src)
 		typec_wait_ps_change(tcpc_dev, TYPEC_WAIT_PS_DISABLE);
 
+/* begin, prize-sunshuai-20190213, add for Wireless charging and OTG switching */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+    if (typec_is_cc_attach(tcpc_dev)){
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+		wrx_disable_vout();
+#endif
+
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-start	
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+        ldo_disable();
+#endif
+//prize added by sunshuai, wireless charge MT5715  soft start, 20190302-end	
+		set_otg_gpio(1);
+		typec_attach_wait_entry(tcpc_dev);
+    }
+    else{
+		set_otg_gpio(0);
+		typec_detach_wait_entry(tcpc_dev);
+    }
+#else
 	if (typec_is_cc_attach(tcpc_dev))
 		typec_attach_wait_entry(tcpc_dev);
 	else
 		typec_detach_wait_entry(tcpc_dev);
+#endif
+/* end, prize-sunshuai-20190213, add for Wireless charging and OTG switching */
 
 	return 0;
 }

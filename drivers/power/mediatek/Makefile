@@ -44,3 +44,16 @@ else
 		obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
 	endif
 endif
+# prize added by lifenfen, turn off NTC , 20190513 begin
+ccflags-$(CONFIG_FIXED_TBAT_25)  += -DFIXED_TBAT_25
+subdir-ccflags-$(CONFIG_FIXED_TBAT_25)	+= -DFIXED_TBAT_25
+# prize added by lifenfen, turn off NTC , 20190513 end
+
+
+# prize-wyq 20190505, for project config-start
+ifneq ($(CONFIG_PROJECT_KOOBEE), "")
+project_koobee := $(subst ",,$(CONFIG_PROJECT_KOOBEE))
+project_koobee := $(shell echo $(project_koobee) | tr '[a-z]' '[A-Z]')
+KBUILD_CFLAGS += -DCONFIG_PROJECT_KOOBEE_$(project_koobee)
+endif
+# prize-wyq 20190505, for project config-end

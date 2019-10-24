@@ -382,3 +382,143 @@ config MTK_DUAL_CHARGER_SUPPORT
           IC is conneceted to PMID pin from the master and VBAT.
 	  Say Yes to enable dual charger support.
 	  Say No to disable dual charger support.
+	  
+	  
+	  
+	  
+	  
+#PRIZE
+	  
+config HIGH_BATTERY_VOLTAGE_SUPPORT_44
+	bool "Support battery 4.4V"
+	default n
+	help
+	  Set Yes to config if 4.4V battery is to be supported.
+
+config CHARGER_HL7005ALL
+	bool "Charger Driver for Halo HL7005 Charger IC"
+	default n
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  Say Y to enable
+	  Halo HL7005 driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
+config PSC5415A_56MR_SUPPORT
+	bool "Modifile Halo HL7005 Charger IC driver as PSC5415A with 56mr"
+	default n
+	depends on CHARGER_HL7005ALL
+	help
+	  Say Y to enable PSC5415A driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
+config PSC5415A_68MR_SUPPORT
+	bool "Modifile Halo HL7005 Charger IC driver as PSC5415A with 68mr"
+	default n
+	depends on CHARGER_HL7005ALL
+	help
+	  Say Y to enable PSC5415A driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
+config PSC5425_40MR_SUPPORT
+	bool "Modifile Halo HL7005 Charger IC driver as PSC5425 with 40mr"
+	default n
+	depends on CHARGER_HL7005ALL
+	help
+	  Say Y to enable PSC5425 driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
+config PSC5425_33MR_SUPPORT
+	bool "Modifile Halo HL7005 Charger IC driver as PSC5425 with 33mr"
+	default n
+	depends on CHARGER_HL7005ALL
+	help
+	  Say Y to enable PSC5425 driver.
+
+config ETA6937_0MR_SUPPORT
+	bool "Modifile Halo HL7005 Charger IC driver as ETA6937 with 33mr"
+	default n
+	depends on CHARGER_HL7005ALL
+	help
+	  Say Y to enable ETA6937 driver.
+
+# begin, prize-lifenfen-20181207, add fuel gauge cw2015
+config MTK_CW2015_SUPPORT
+	bool "Charger Driver for CW2015 fg"
+	default n
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  Say Y to enable
+	  CW2015 driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+# end, prize-lifenfen-20181207, add fuel gauge cw2015
+
+# begin, prize-lifenfen-20181217, add for input current regulation
+config PRIZE_CONSTANT_AICR_SUPPORT
+        bool "config for MT6370 charger input current regulation"
+        default n
+        depends on MT6370_PMU_CHARGER
+        help
+          Say Y to enable constant aicr regulation.
+          It depends on config MT6370_PMU_CHARGER.
+# end, prize-lifenfen-20181217, add for input current regulation
+
+# begin, prize-lifenfen-20190103, add for wireless power receiver mt5715
+config PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715
+        bool "driver for Wireless Power Receiver MAXIC MT5715 IC"
+        default n
+        help
+          Set to Yes if MT5715 is used.
+# end, prize-lifenfen-20190103, add for wireless power receiver mt5715
+
+#//prize added by huarui, ne6153 support, 20190111-start
+config PRIZE_NE6153_SUPPORT
+	bool "PRIZE_NE6153_SUPPORT"
+	default n
+	help
+	  Set to Yes if NE6153 is used.
+#//prize added by huarui, ne6153 support, 20190111-end
+
+#//prize added by huarui, wireless charge soft start, 20190111-start
+config PRIZE_WLC_SOFT_START
+	bool "PRIZE_WLC_SOFT_START"
+	default n
+	help
+	  This is used to PRIZE_WLC_SOFT_START
+#//prize added by huarui, wireless charge soft start, 20190111-end
+
+# start add by sunshuai for Bright screen current limit  20190110
+config PRIZE_CHARGE_CTRL_POLICY
+	bool "PRIZE_CHARGE_CTRL_POLICY"
+	default y
+	help
+	  This is used to PRIZE_CHARGE_CTRL_POLICY
+# end add by sunshuai for Bright screen current limit    20190110
+
+# prize added by lifenfen, turn off NTC , 20190513 begin
+config FIXED_TBAT_25
+        bool "turn off NTC, battery temperature check"
+        default n
+        ---help---
+        for ett test.etc.
+# prize added by lifenfen, turn off NTC , 20190513 end
+
+# prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start
+config  PRIZE_CHARGE_CTRL_GIGAST
+        bool "Charging is controlled according to the battery specification"
+        default n
+        help
+           This is used to PRIZE_CHARGE_CTRL_GIGAST
+# prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 end
+
+# prize-wyq 20190505, for project config-start
+config PROJECT_KOOBEE
+	string "PROJECT KOOBEE"
+	default ""
+# prize-wyq 20190505, for project config-end	
+

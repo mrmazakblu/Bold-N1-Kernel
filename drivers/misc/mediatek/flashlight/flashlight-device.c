@@ -25,6 +25,9 @@
 	const struct flashlight_device_id flashlight_id[] = {
 		/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 		{0, 0, 0, "flashlights-rt4505", 0, 0},
+		/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  add for flashlight */
+		{0, 0, 0, "flashlights-aw-gpio", 0, 0},
+		/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  end for flashlight */
 	};
 #endif
 #elif defined(mt6757)

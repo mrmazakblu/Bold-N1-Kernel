@@ -119,6 +119,13 @@ config MTK_GPT_SCHEME_SUPPORT
 	  GPT is a better partition layout scheme
 	  GPT is instead of PMT
 
+config PRIZE_VEB_A5
+   bool PRIZE_VEB_A5
+   default no
+   help
+     PRIZE_VEB_A5
+
+
 source "drivers/misc/mediatek/dum-char/Kconfig"
 source "drivers/misc/mediatek/nand/Kconfig"
 source "drivers/misc/mediatek/partition/Kconfig"
@@ -565,6 +572,9 @@ source "drivers/misc/mediatek/smartpa/Kconfig"
 source "drivers/misc/mediatek/reg_monitor/Kconfig"
 source "drivers/misc/mediatek/iccs/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
+#prize-add prize-pengzhipeng-20180827-start
+source "drivers/misc/mediatek/prize/Kconfig"
+#prize-add prize-pengzhipeng-20180827-end
 source "drivers/misc/mediatek/base/power/mcdi/Kconfig"
 source "drivers/misc/mediatek/geniezone/Kconfig"
 source "drivers/misc/mediatek/timer/Kconfig"
@@ -604,6 +614,39 @@ config MTK_DYNAMIC_LOAD_STORE_BYPASS_WA
 	default n
 	help
 	  Disable load-store-bypassing in user-space
+
+#prize added by chenjiaxi, prize_dual_camera driver, 20190111-start
+source "drivers/misc/mediatek/prize_dual_camera/Kconfig"
+#prize added by chenjiaxi, prize_dual_camera driver, 20190111-end
+
+#prize-add prize-wangyunqing-20181110-start
+source "drivers/misc/mediatek/hardware_info/Kconfig"
+#prize-add prize-wangyunqing-20181110-end
+
+#prize-add wangyunqing-20181121-start
+config MTK_AW3216_CHARGER
+	bool "Support aw3216 switch charger"
+	default n
+	help
+	  Support aw3216 switch charger
+#prize-add wangyunqing-20181121-end
+
+#/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  add for step_motor*/
+config PRIZE_STEP_MOTOR_ENABLE
+	bool "Support prize_step_motor function"
+	default n
+	help
+	  Select Y to enable prize_step_motor function
+#/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  end for step_motor*/ 
+#/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  add for hall1120*/
+source "drivers/misc/mediatek/hall_m120/Kconfig"
+#/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  end for hall1120*/
+
+# prize-huangzhanbin-20190319-add for dualcam-start
+config DUALCAM_CALI_RW
+		bool "CONFIG_DUALCAM_CALI_RW"
+		default n
+# prize-huangzhanbin-20190319-add for dualcam-end
 
 endmenu    # Misc
 

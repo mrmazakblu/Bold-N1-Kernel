@@ -136,6 +136,9 @@
 #define IMX179_SENSOR_ID                        0x0179
 #define IMX178_SENSOR_ID                        0x0178
 #define IMX135_SENSOR_ID                        0x0135
+/* prize added by chenjiaxi, imx134, 20190112-start */
+#define IMX134_SENSOR_ID                        0x0134
+/* prize added by chenjiaxi, imx134, 20190112-end */
 #define IMX132MIPI_SENSOR_ID                    0x0132
 #define IMX119_SENSOR_ID                        0x0119
 #define IMX105_SENSOR_ID                        0x0105
@@ -222,6 +225,9 @@
 #define S5K5E2YA_SENSOR_ID                      0x5e20
 #define S5K4H5YX_2LANE_SENSOR_ID                0x485B
 #define S5K4H5YC_SENSOR_ID                      0x485B
+/* prize added by wangmengdong,imgsensor,add for S5K4H5YXKERR, 20190119-start */
+#define S5K4H5YXKERR_SENSOR_ID                  0x485B
+/* prize added by wangmengdong,imgsensor, add for S5K4H5YXKERR, 20190119-end */
 #define S5K83AFX_SENSOR_ID                      0x01C4
 #define S5K5CAGX_SENSOR_ID                      0x05ca
 #define S5K8AAYX_MIPI_SENSOR_ID                 0x08aa
@@ -267,6 +273,14 @@
 #define MT9P017MIPI_SENSOR_ID                   0x4800
 #define MT9T113MIPI_SENSOR_ID                   0x4680
 /*GC*/
+/* prize added by yaozhipeng, gc8024, 20190123-start */
+#define GC8024_SENSOR_ID                   	0x8024
+/* prize added by yaozhipeng, gc8024, 20190123-end */
+/* prize added by chenjiaxi, gc5025, 20190112-start */
+#define GC5025_SENSOR_ID                        0x5025
+/* prize added by chenjiaxi, gc5025, 20190112-end */
+#define GC2755_SENSOR_ID                        0x2655
+#define GC2385_SENSOR_ID                        0x2385
 #define GC2365_SENSOR_ID                        0x2365
 #define GC2366_SENSOR_ID                        0x2366
 #define GC2355_SENSOR_ID                        0x2355
@@ -287,6 +301,9 @@
 #define A5142MIPI_SENSOR_ID                     0x4800
 /*HM*/
 #define HM3451_SENSOR_ID                        0x345
+/* prize added by chenjiaxi, add for hm8040, 20190111-start */
+#define HM8040_SENSOR_ID                        0x8040
+/* prize added by chenjiaxi, add for hm8040, 20190111-end */
 /*AR*/
 #define AR0833_SENSOR_ID                        0x4B03
 /*SIV*/
@@ -314,6 +331,39 @@
 #define SHARP3D_SENSOR_ID                       0x003d
 #define T8EV5_SENSOR_ID                         0x1011
 
+/*prize  add  for sub camera by zhuzhengjiang    20190116-begin*/
+#define HI846_SENSOR_ID                         0x0846
+#define GC8034_SENSOR_ID                        0x8044
+#define GC8044_SENSOR_ID                        0x8054  //compatible 8034
+#define S5K5E8YX_BYD_SENSOR_ID                  0x5e81
+#define BF2206_SENSOR_ID                        0x2206
+#define S5K4H7YX_SENSOR_ID                      0x487b
+#define S5K4H7YXSUB_SENSOR_ID     (0x487b + 1)
+#define IMX499_SENSOR_ID                        0x0499
+#define S5K5E9YX_SENSOR_ID                      0x559B
+#define S5K2X5SP_SENSOR_ID                      0x2185
+#define IMX476_SENSOR_ID                        0x0476
+#define S5KGM1SP_SENSOR_ID                      0x08D1
+#define OV168854CELL_SENSOR_ID                  0x16885+1
+#define GC2375_SENSOR_ID                        0x2375
+
+
+#define SENSOR_DRVNAME_HI846_MIPI_RAW           "hi846_mipi_raw"
+#define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
+#define SENSOR_DRVNAME_GC8044_MIPI_RAW          "gc8044_mipi_raw"
+#define SENSOR_DRVNAME_S5K5E8YX_BYD_MIPI_RAW    "s5k5e8yxmipirawbyd"
+#define SENSOR_DRVNAME_BF2206_MIPI_RAW			"bf2206_mipi_raw"
+#define SENSOR_DRVNAME_S5K4H7YX_MIPI_RAW        "s5k4h7yx_mipi_raw"
+#define SENSOR_DRVNAME_S5K4H7YXSUB_MIPI_RAW        "s5k4h7yxsub_mipi_raw"
+#define SENSOR_DRVNAME_IMX499_MIPI_RAW          "imx499_mipi_raw"
+#define SENSOR_DRVNAME_S5K5E9YX_MIPI_RAW        "s5k5e9yx_mipi_raw"
+#define SENSOR_DRVNAME_S5K2X5SP_MIPI_RAW        "s5k2x5sp_mipi_raw"
+#define SENSOR_DRVNAME_IMX476_MIPI_RAW          "imx476_mipi_raw"
+#define SENSOR_DRVNAME_GC2755_MIPI_RAW          "gc2755_mipi_raw"
+#define SENSOR_DRVNAME_S5KGM1SP_MIPI_RAW        "s5kgm1sp_mipi_raw"
+#define SENSOR_DRVNAME_OV168854CELL_MIPI_RAW    "ov168854cell_mipi_raw"
+#define SENSOR_DRVNAME_GC2375_MIPI_RAW          "gc2375_mipi_raw"
+/*prize  add  for camera  by zhuzhengjiang    20190116-end*/
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -344,6 +394,9 @@
 #define SENSOR_DRVNAME_IMX179_MIPI_RAW          "imx179_mipi_raw"
 #define SENSOR_DRVNAME_IMX178_MIPI_RAW          "imx178_mipi_raw"
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW          "imx135_mipi_raw"
+/* prize added by chenjiaxi, imx134, 20190112-start */
+#define SENSOR_DRVNAME_IMX134_MIPI_RAW          "imx134_mipi_raw"
+/* prize added by chenjiaxi, imx134, 20190112-end */
 #define SENSOR_DRVNAME_IMX132_MIPI_RAW          "imx132_mipi_raw"
 #define SENSOR_DRVNAME_IMX119_MIPI_RAW          "imx119_mipi_raw"
 #define SENSOR_DRVNAME_IMX105_MIPI_RAW          "imx105_mipi_raw"
@@ -419,6 +472,9 @@
 #define SENSOR_DRVNAME_S5K3H2YX_MIPI_RAW        "s5k3h2yx_mipi_raw"
 #define SENSOR_DRVNAME_S5K3H7Y_MIPI_RAW         "s5k3h7y_mipi_raw"
 #define SENSOR_DRVNAME_S5K4H5YC_MIPI_RAW        "s5k4h5yc_mipi_raw"
+/* prize added by wangmengdong, add for S5K4H5YXKERR, 20190119-start */
+#define SENSOR_DRVNAME_S5K4H5YXKERR_MIPI_RAW    "s5k4h5yxkerr_mipi_raw"
+/* prize added by wangmengdong, add for S5K4H5YXKERR, 20190119-end */
 #define SENSOR_DRVNAME_S5K4E1GA_MIPI_RAW        "s5k4e1ga_mipi_raw"
 #define SENSOR_DRVNAME_S5K4ECGX_MIPI_YUV        "s5k4ecgx_mipi_yuv"
 #define SENSOR_DRVNAME_S5K5CAGX_YUV             "s5k5cagx_yuv"
@@ -451,6 +507,13 @@
 #define SENSOR_DRVNAME_MT9V113_YUV              "mt9v113_yuv"
 #define SENSOR_DRVNAME_MT9T113_MIPI_YUV         "mt9t113_mipi_yuv"
 /*GC*/
+/* prize added by yaozhipeng, gc8024, 20190123-start */
+#define SENSOR_DRVNAME_GC8024_MIPI_RAW           "gc8024_mipi_raw"
+/* prize added by yaozhipeng, gc8024, 20190123-end */
+/* prize added by chenjiaxi, gc5025, 20190112-start */
+#define SENSOR_DRVNAME_GC5025_MIPI_RAW          "gc5025_mipi_raw"
+/* prize added by chenjiaxi, gc5025, 20190112-end */
+#define SENSOR_DRVNAME_GC2385_MIPI_RAW          "gc2385_mipi_raw"
 #define SENSOR_DRVNAME_GC2365_MIPI_RAW          "gc2365_mipi_raw"
 #define SENSOR_DRVNAME_GC2366_MIPI_RAW          "gc2366_mipi_raw"
 #define SENSOR_DRVNAME_GC2035_YUV               "gc2035_yuv"
@@ -473,6 +536,9 @@
 #define SENSOR_DRVNAME_A5142_MIPI_RAW           "a5142_mipi_raw"
 /*HM*/
 #define SENSOR_DRVNAME_HM3451_RAW               "hm3451_raw"
+/* prize added by chenjiaxi, add for hm8040, 20190111-start */
+#define SENSOR_DRVNAME_HM8040_MIPI_RAW          "hm8040_mipi_raw"
+/* prize added by chenjiaxi, add for hm8040, 20190111-end */
 /*AR*/
 #define SENSOR_DRVNAME_AR0833_MIPI_RAW          "ar0833_mipi_raw"
 /*SIV*/

@@ -334,7 +334,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		soter-shared-mem {
 			compatible = "microtrust,shared_mem";
 			no-map;
-			size = <0 0x200000>;
+			size = <0 0x400000>;
 			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
 #endif
@@ -2235,7 +2235,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,disp_aal0";
 		reg = <0 0x14010000 0 0x1000>;
 		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_LOW>;
-		aal_support = <1>;
+		aal_support = <0>;//prize-wyq 20190319 do not use aal to avoid KE when writing hbm mode
 	};
 
 	disp_gamma0@14011000 {
@@ -4041,7 +4041,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,lk_charger";
 		enable_pe_plus;
 		power_path_support;
+/*start prize-sunshuai-20190123, modify for NE6153  */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+		max_charger_voltage = <9500000>;
+#else
 		max_charger_voltage = <6500000>;
+#endif
+/*end prize-sunshuai-20190123, modify for NE6153  */
 		fast_charge_voltage = <3000000>;
 
 		/* charging current */
@@ -4071,22 +4077,47 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		power_path_support;
 
 		/* common */
+/* begin, prize-lifenfen-20181221, modify for charging cv value, should be the same with charger ic default cv setting */
+/*
 		battery_cv = <4350000>;
+*/
+		battery_cv = <4350000>; //Optimize the power from 100 to 99 of the time
+/* end, prize-lifenfen-20181221, modify for charging cv value, should be the same with charger ic default cv setting */
+
+/*start prize-sunshuai-20190123, modify for NE6153  */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT) || defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+		max_charger_voltage = <9500000>;
+#else
 		max_charger_voltage = <6500000>;
+#endif
+/*end prize-sunshuai-20190123, modify for NE6153  */
+
+/* begin, prize-lifenfen-20181221, modify for charging mivr value, should be the same with charger ic default cv setting */
+/*
 		min_charger_voltage = <4600000>;
+*/
+		min_charger_voltage = <4400000>;
+/* end, prize-lifenfen-20181221, modify for charging mivr value, should be the same with charger ic default cv setting */
 
 		/* charging current */
 		usb_charger_current_suspend = <0>;
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
-		ac_charger_input_current = <3200000>;
+		ac_charger_current = <2500000>;/* prize-sunshuai-20190123, modify for ac_charger_current */
+		ac_charger_input_current = <2500000>;/* prize-sunshuai-20190123, modify for ac_charger_input_current */
+
+/*start prize-sunshuai-20190123, modify for NE6153  */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+		non_std_ac_charger_current = <2000000>;
+#else
 		non_std_ac_charger_current = <500000>;
+#endif
+/*end prize-sunshuai-20190123, modify for NE6153  */
 		charging_host_charger_current = <1500000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
-		ta_ac_charger_current = <3000000>;
+		ta_ac_charger_current = <2500000>;/* prize-sunshuai-20190123, modify for pe ta_ac_charger_current */
 
 		/* sw jeita */
 		jeita_temp_above_t4_cv_voltage = <4240000>;
@@ -4109,10 +4140,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 		/* battery temperature protection */
 		enable_min_charge_temperature;
-		min_charge_temperature = <0>;
-		min_charge_temperature_plus_x_degree = <6>;
-		max_charge_temperature = <50>;
-		max_charge_temperature_minus_x_degree = <47>;
+		min_charge_temperature = <(-5)>; //prize-mod sunshuai 20190307 modify a low temp threshold
+		min_charge_temperature_plus_x_degree = <0>; //prize-mod sunshuai 20190307 modify a low temp threshold exit
+		max_charge_temperature = <55>; //prize-mod wyq 20181121 modify a higher temp threshold
+		max_charge_temperature_minus_x_degree = <50>; //prize-mod sunshuai 20190214 modify a higher temp threshold exit 
 
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;
@@ -4141,6 +4172,31 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		bif_threshold1 = <4250000>;
 		bif_threshold2 = <4300000>;
 		bif_cv_under_threshold2 = <4450000>;
+
+/*start prize-sunshuai-20190123, modify for NE6153  */
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+		/*wireless charger current soft start*/
+		wlc_cur_step_pattern_num = <7>; /*must < 10*/
+		wlc_cur_step_pattern_input = <0 100000 500000 500000 800000 1000000 1100000>;/*NE6153 must < 1100000*/
+		wlc_cur_step_pattern_output = <0 0 300000 500000 1000000 1500000 2000000>;
+#endif
+/*end prize-sunshuai-20190123, modify for NE6153  */
+
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+		/*wireless charger current soft start*/
+		MT5715_wlc_cur_step_num = <8>;
+		MT5715_wlc_cur_step_input = <0 100000 500000 500000 800000 1000000 1000000 1100000>;
+		MT5715_wlc_cur_step_output = <0 0 300000 500000 800000 1000000 1500000 2000000>;
+#endif
+/*prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start  */
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+		start_step1_temp = <(-5)>;
+		start_step2_temp = <15>;
+		start_step3_temp = <45>;
+		exit_step3_temp = <40>;
+		end_step3_temp = <60>;
+#endif
+/*prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 end  */
 	};
 
 	rt9465_slave_chr: rt9465_slave_chr {
@@ -4157,6 +4213,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
+
+/* begin, prize-lifenfen-20190104, add for ata sunwave fp */
+	fpc: fpc {
+		compatible = "mediatek,mt6765-fpc";
+	};
+/* end, prize-lifenfen-20190104, add for ata sunwave fp */
 
 	tcpc_pd: mt6370_pd_eint {
 	};
@@ -4217,8 +4279,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,nfc-gpio-v2";
 		gpio-rst = <19>;
 		gpio-rst-std = <&pio 19 0x0>;
-		gpio-irq = <20>;
-		gpio-irq-std = <&pio 20 0x0>;
+		gpio-irq = <3>;
+		gpio-irq-std = <&pio 3 0x0>;
 	};
 
 	irq_nfc: irq_nfc {
@@ -4238,12 +4300,42 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	usb_c_pinctrl: usb_c_pinctrl {
 	};
 
+/* prize modified by lifenfen, led for ddr test, 20190515 begin */
+       ddr_led:ddr_led{
+	       compatible = "ddr_led";
+               ddr_red    = <&pio 95 0x0>;/* RXD0 */
+               ddr_green  = <&pio 96 0x0>;/* UTXD0 */
+               status = "okay";
+       };
+/* prize modified by lifenfen, led for ddr test, 20190515 end */
+
+/* prize-sunshuai-20190308 start, del for Solve the problem of power consumption after usb is connected to the computer */
+#if 0
 	ssusb_ip_sleep: ssusb_ip_sleep {
 		compatible = "mediatek,usb_ipsleep";
 		interrupt-parent = <&pio>;
 		interrupts = <179 IRQ_TYPE_LEVEL_LOW 187 0>;
 		status = "okay";
 	};
+#endif
+/* prize-sunshuai-20190308 end, del for Solve the problem of power consumption after usb is connected to the computer */
+
+/* begin, prize-lifenfen-20181206, add for lcm gpio pinctl */
+    prize_disp: prize_disp{
+		compatible = "prize,dispsys_gpio";
+    };
+/* end, prize-lifenfen-20181206, add for lcm gpio pinctl */
+/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  add for step_motor*/
+	prize_stepper_motor: prize_stepper_motor {
+		compatible = "mediatek,prize_stepper_motor";
+		//reg = <0 0x1a080000 0 0x1000>;  /* prize_stepper_motor */
+	};
+/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  end for step_motor*/
+/* begin, prize-lifenfen-20181219, add for hall */
+	hall_1: hall_1 {
+		compatible = "mediatek,hall_1";
+	};
+/* end, prize-lifenfen-20181219, add for hall */
 };
 
 #include "mt6358.dtsi"

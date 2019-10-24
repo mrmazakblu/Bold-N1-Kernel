@@ -51,6 +51,10 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm);
 int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm);
 int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps);
 int disp_lcm_set_backlight(struct disp_lcm_handle *plcm, void *handle, int level);
+int disp_lcm_set_backlight_mode(struct disp_lcm_handle *plcm, void *handle, int mode);//prize-add wyq 20181226 add  lcd-backlight mode interface
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 begin */
+int disp_lcm_backlight_level(struct disp_lcm_handle *plcm);
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 end */
 int disp_lcm_read_fb(struct disp_lcm_handle *plcm);
 int disp_lcm_ioctl(struct disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg);
 int disp_lcm_is_video_mode(struct disp_lcm_handle *plcm);

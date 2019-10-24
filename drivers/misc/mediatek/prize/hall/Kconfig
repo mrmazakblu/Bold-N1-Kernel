@@ -1,0 +1,11 @@
+# prize-dingjun-20150410-start
+#config MTK_HALLDEVICE
+config PRIZE_HALL
+	bool "hall device"
+	default n
+	help
+	  Select Y to enable hall device support
+# prize-dingjun-20150410-end
+#
+#
+#

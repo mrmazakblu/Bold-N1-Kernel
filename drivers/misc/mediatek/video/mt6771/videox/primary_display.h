@@ -386,6 +386,7 @@ int primary_display_get_original_width(void);
 int primary_display_get_original_height(void);
 int primary_display_lcm_ATA(void);
 int primary_display_setbacklight(unsigned int level);
+int primary_display_setbacklight_mode(unsigned int mode);//prize-add wyq 20181226 add  lcd-backlight mode interface
 int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback, unsigned int user_data);
 int primary_display_switch_dst_mode(int mode);
 int primary_display_get_lcm_index(void);

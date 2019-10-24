@@ -446,6 +446,12 @@ int primary_display_esd_check(void)
 		mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_START, 0, 0);
 
 		mode = get_esd_check_mode();
+/* prize added by lifenfen, for te esd check ,depend on param lcm_ext_te_monitor, 20190221 begin */
+		DISPCHECK("[ESD]lcm_ext_te_monitor = %u\n", primary_get_lcm()->params->dsi.lcm_ext_te_monitor);
+		if (primary_get_lcm()->params->dsi.lcm_ext_te_monitor)
+			mode = GPIO_EINT_MODE;
+/* prize added by lifenfen, for te esd check ,depend on param lcm_ext_te_monitor, 20190221 end */
+
 		if (mode == GPIO_EINT_MODE) {
 			DISPINFO("[ESD]ESD check eint\n");
 			mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
@@ -540,6 +546,10 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 
 				DDPPR_ERR("[ESD]esd check fail, will do esd recovery. try=%d\n", i);
 				primary_display_esd_recovery();
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 begin */
+				if (disp_lcm_backlight_level(primary_get_lcm()) > 0)
+					disp_lcm_set_backlight(primary_get_lcm(), NULL, disp_lcm_backlight_level(primary_get_lcm()));
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 end */
 				recovery_done = 1;
 			} while (++i < esd_try_cnt);
 

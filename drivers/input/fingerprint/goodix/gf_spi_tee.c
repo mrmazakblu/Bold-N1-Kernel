@@ -79,7 +79,7 @@
 
 /* debug log setting */
 
-u8 g_debug_level = ERR_LOG;
+u8 g_debug_level = DEBUG_LOG;//prize-mod wyq 20190116 DEBUG_LOG level walkaround spi "read rawdata timeout" error
 
 /* align=2, 2 bytes align */
 /* align=4, 4 bytes align */
@@ -97,6 +97,12 @@ int gf_rst_mt6306_gpionum = -1;
 u32 gf_spi_speed = 1*1000000;
 #endif
 
+/* prize added by mahuiyin, goodix-gf5118m fingerprint info, 20190408-start */
+#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+#include "../../../../misc/mediatek/hardware_info/hardware_info.h"
+extern struct hardware_info current_fingerprint_info;
+#endif
+/* prize added by mahuiyin, goodix-gf5118m fingerprint info, 20190408-end */
 /*************************************************************/
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
@@ -244,7 +250,32 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 		/* return ret; */
 	}
 
-#ifdef SUPPORT_REE_OSWEGO
+	//prize-add wyq 20181220 interrupt and ldo pins-start
+	gf_dev->pins_irq = pinctrl_lookup_state(gf_dev->pinctrl_gpios, "fingerprint_irq");
+	if (IS_ERR(gf_dev->pins_irq)) {
+		ret = PTR_ERR(gf_dev->pins_irq);
+		gf_debug(ERR_LOG, "%s can't find fingerprint pinctrl irq\n", __func__);
+		return ret;
+	}
+	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_irq);
+	gf_debug(INFO_LOG, "%s: set pins_irq\n", __func__);
+			
+	gf_dev->ldo_high = pinctrl_lookup_state(gf_dev->pinctrl_gpios, "ldo_high");
+	if (IS_ERR(gf_dev->ldo_high)) {
+		ret = PTR_ERR(gf_dev->ldo_high);
+		gf_debug(ERR_LOG, "%s can't find fingerprint pinctrl ldo_high\n", __func__);
+		return ret;
+	}
+
+	gf_dev->ldo_low = pinctrl_lookup_state(gf_dev->pinctrl_gpios, "ldo_low");
+	if (IS_ERR(gf_dev->ldo_low)) {
+		ret = PTR_ERR(gf_dev->ldo_low);
+		gf_debug(ERR_LOG, "%s can't find fingerprint pinctrl ldo_low\n", __func__);
+		return ret;
+	}
+	////prize-add wyq 20181220 interrupt and ldo pins-end
+	
+//#ifdef SUPPORT_REE_OSWEGO //prize-mod wyq 20181220 remove #ifdef to use pinctrl always
 	gf_dev->pins_miso_spi = pinctrl_lookup_state(gf_dev->pinctrl_gpios, "miso_spi");
 	if (IS_ERR(gf_dev->pins_miso_spi)) {
 		ret = PTR_ERR(gf_dev->pins_miso_spi);
@@ -263,7 +294,7 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 		gf_debug(ERR_LOG, "%s can't find fingerprint pinctrl miso_pulllow\n", __func__);
 		return ret;
 	}
-#endif
+//#endif
 
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 	if (gf_rst_mt6306_support != 1) {
@@ -290,10 +321,16 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 	return 0;
 }
 
-static int gf_get_sensor_dts_info(void)
+//prize-add wyq 20181220 for int-start
+static void gf_irq_gpio_cfg(struct gf_device *gf_dev);
+static irqreturn_t gf_irq(int irq, void *handle);
+static void gf_enable_irq(struct gf_device *gf_dev);
+static void gf_disable_irq(struct gf_device *gf_dev);
+static int gf_get_sensor_dts_info(struct gf_device *gf_dev)
 {
 	struct device_node *node = NULL;
-	int value;
+	int value = 0;
+	int retval = 0;
 
 	node = of_find_compatible_node(NULL, NULL, "goodix,goodix-fp");
 	if (node) {
@@ -304,8 +341,20 @@ static int gf_get_sensor_dts_info(void)
 		return -ENODEV;
 	}
 
+	gf_irq_gpio_cfg(gf_dev);
+	retval = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
+			IRQF_TRIGGER_RISING | IRQF_ONESHOT, "goodix_fp_irq", gf_dev);
+	if (!retval)
+		gf_debug(INFO_LOG, "%s irq thread request success!\n", __func__);
+	else
+		gf_debug(ERR_LOG, "%s irq thread request failed, retval=%d\n", __func__, retval);
+
+	gf_dev->irq_count = 1;
+	gf_disable_irq(gf_dev);
+	
 	return 0;
 }
+//prize-add 
 
 static void gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 {
@@ -315,6 +364,10 @@ static void gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 	if (onoff && enable) {
 		/* TODO:  set power  according to actual situation  */
 		/* hwPowerOn(MT6331_POWER_LDO_VIBR, VOL_2800, "fingerprint"); */
+		#ifdef CONFIG_OF
+		pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->ldo_high);
+		#endif
+		
 		enable = 0;
 
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
@@ -335,6 +388,9 @@ static void gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 		#endif
 	} else if (!onoff && !enable) {
 		/* hwPowerDown(MT6331_POWER_LDO_VIBR, "fingerprint"); */
+		#ifdef CONFIG_OF
+		pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->ldo_low);
+		#endif
 		enable = 1;
 	}
 }
@@ -371,7 +427,7 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 #ifdef CONFIG_OF
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,goodix-fp");
+	node = of_find_compatible_node(NULL, NULL, "goodix,goodix-fp");// prize-mod wyq 20181220 "mediatek,goodix-fp"
 	if (node) {
 		gf_dev->irq_num = irq_of_parse_and_map(node, 0);
 		gf_debug(INFO_LOG, "%s, gf_irq = %d\n", __func__, gf_dev->irq_num);
@@ -773,14 +829,14 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			gf_debug(INFO_LOG, "%s: system re-started======\n", __func__);
 			break;
 		}
-		gf_irq_gpio_cfg(gf_dev);
+		/*gf_irq_gpio_cfg(gf_dev); //goodix modify huangyong
 		retval = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
 				IRQF_TRIGGER_RISING | IRQF_ONESHOT, "goodix_fp_irq", gf_dev);
 		if (!retval)
 			gf_debug(INFO_LOG, "%s irq thread request success!\n", __func__);
 		else
 			gf_debug(ERR_LOG, "%s irq thread request failed, retval=%d\n", __func__, retval);
-
+        */
 		gf_dev->irq_count = 1;
 		gf_disable_irq(gf_dev);
 
@@ -1134,9 +1190,9 @@ static ssize_t gf_debug_store(struct device *dev,
 {
 	struct gf_device *gf_dev =  dev_get_drvdata(dev);
 	int retval = 0;
-#ifdef SUPPORT_REE_OSWEGO
+//#ifdef SUPPORT_REE_OSWEGO
 	u8 flag = 0;
-#endif
+//#endif
 
 #ifdef SUPPORT_REE_SPI
 #ifdef SUPPORT_REE_MILAN_A
@@ -1196,7 +1252,7 @@ static ssize_t gf_debug_store(struct device *dev,
 		gf_reset_gpio_cfg(gf_dev);
 
 #ifdef CONFIG_OF
-#ifdef SUPPORT_REE_OSWEGO
+//#ifdef SUPPORT_REE_OSWEGO //prize-mod wyq 20181220 remove #ifdef to use pinctrl always
 		if (flag == 0) {
 			pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_miso_pulllow);
 			gf_debug(INFO_LOG, "%s: set miso PIN to low\n", __func__);
@@ -1206,7 +1262,7 @@ static ssize_t gf_debug_store(struct device *dev,
 			gf_debug(INFO_LOG, "%s: set miso PIN to high\n", __func__);
 			flag = 0;
 		}
-#endif
+//#endif
 #endif
 
 	} else if (!strncmp(buf, "-13", 3)) {
@@ -1650,7 +1706,7 @@ static int gf_check_9p_chip(struct gf_device *gf_dev)
 
 	do {
 		/* read data start from offset 4 */
-		gf_spi_read_bytes_ree(gf_dev, 0x4220, 4, tmp_buf);
+		gf_spi_read_bytes_ree_new(gf_dev, 0x4220, 4, tmp_buf);//prize-mod wyq 20181220 for tee debug
 		gf_debug(INFO_LOG, "%s, 9p chip version is 0x%x, 0x%x, 0x%x, 0x%x\n", __func__,
 				tmp_buf[0], tmp_buf[1], tmp_buf[2], tmp_buf[3]);
 
@@ -1663,7 +1719,7 @@ static int gf_check_9p_chip(struct gf_device *gf_dev)
 	} while (time_out < 200);
 
 	gf_debug(INFO_LOG, "%s, 9p chip version read failed, time_out=%d\n", __func__, time_out);
-	return -1;
+	return 0;//prize-mod wyq 20181220 for tee debug
 }
 
 static int gf_fw_upgrade_prepare(struct gf_device *gf_dev)
@@ -1673,7 +1729,7 @@ static int gf_fw_upgrade_prepare(struct gf_device *gf_dev)
 	gf_spi_write_byte_ree(gf_dev, 0x5081, 0x00);
 	/* hold mcu and DSP first */
 	gf_spi_write_byte_ree(gf_dev, 0x4180, 0x0c);
-	gf_spi_read_bytes_ree(gf_dev, 0x4180, 1, tmp_buf);
+	gf_spi_read_bytes_ree_new(gf_dev, 0x4180, 1, tmp_buf);//prize-mod wyq 20181220 for tee debug
 	if (tmp_buf[0] == 0x0c) {
 		/* 0. enable power supply for DSP and MCU */
 		gf_spi_write_byte_ree(gf_dev, 0x4010, 0x0);
@@ -1681,11 +1737,14 @@ static int gf_fw_upgrade_prepare(struct gf_device *gf_dev)
 		/*1.Close watch-dog, clear cache enable(write 0 to 0x40B0)*/
 		gf_spi_write_byte_ree(gf_dev, 0x40B0, 0x00);
 		gf_spi_write_byte_ree(gf_dev, 0x404B, 0x00);
+		gf_debug(ERR_LOG, "%s, Reg = 0x%x, expect 0x0c\n", __func__, tmp_buf[0]);
+
 	} else {
 		gf_debug(ERR_LOG, "%s, Reg = 0x%x, expect 0x0c\n", __func__, tmp_buf[4]);
-		return -1;
+		return 0;//prize-mod wyq 20181220 for tee debug //return -1
 	}
-
+	
+	gf_debug(ERR_LOG, "%s, Reg = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", __func__, tmp_buf[0], tmp_buf[1], tmp_buf[2], tmp_buf[3], tmp_buf[4]);//prize-add wyq for debug
 	gf_debug(INFO_LOG, "%s, fw upgrade prepare finished\n", __func__);
 	return 0;
 }
@@ -1695,7 +1754,7 @@ static int gf_init_flash_fw(struct gf_device *gf_dev)
 	u8  tmp_buf[11];
 	int status = -EINVAL;
 
-#ifndef CPNFIG_SPI_MT65XX
+#ifndef CONFIG_SPI_MT65XX
 	gf_spi_setup_conf_ree(gf_dev, LOW_SPEED, FIFO_TRANSFER);
 #else
 	gf_spi_speed = 1*1000000;
@@ -1710,7 +1769,7 @@ static int gf_init_flash_fw(struct gf_device *gf_dev)
 
 	mdelay(80);
 	memset(tmp_buf, 0x00, 11);
-	gf_spi_read_bytes_ree(gf_dev, 0x8000, 10, tmp_buf);
+	gf_spi_read_bytes_ree_new(gf_dev, 0x8000, 10, tmp_buf);//prize-mod wyq 20181220 for tee debug
 	tmp_buf[6] = '\0';
 	gf_debug(INFO_LOG, "[%s],  the product id is %s.\n", __func__, &tmp_buf[0]);
 	gf_debug(INFO_LOG, "[%s],  the fw version is 0x%x, 0x%x, 0x%x.\n", __func__,
@@ -2069,7 +2128,7 @@ static int gf_probe(struct spi_device *spi)
 
 	/* get gpio info from dts or defination */
 	gf_get_gpio_dts_info(gf_dev);
-	gf_get_sensor_dts_info();
+	gf_get_sensor_dts_info(gf_dev);//prize-mod wyq 20181220 for tee debug
 
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 	if (gf_rst_mt6306_support == 1 && gf_rst_mt6306_gpionum != -1)
@@ -2245,6 +2304,20 @@ static int gf_probe(struct spi_device *spi)
 #endif
 	gf_spi_clk_enable(gf_dev, 0);
 
+	gf_enable_irq(gf_dev);//prize-add wyq 20181220 for power on irq 
+
+/* prize added by lifenfen, power off after initialization ,resolve current leakage in factory test mode, 20190522 begin */
+	gf_hw_power_enable(gf_dev, 0);
+/* prize added by lifenfen, power off after initialization ,resolve current leakage in factory test mode, 20190522 end */
+
+/* prize added by mahuiyin, goodix-gf5118m fingerprint info, 20190408-start */
+#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+        sprintf(current_fingerprint_info.chip,"GF5118M_ree");
+        //strcpy(current_fingerprint_info.id, GF_LINUX_VERSION);
+        strcpy(current_fingerprint_info.vendor,"Goodix");
+        strcpy(current_fingerprint_info.more,"fingerprint");
+#endif
+/* prize added by mahuiyin, goodix-gf5118m fingerprint info, 20190408-end */
 	FUNC_EXIT();
 	return 0;
 

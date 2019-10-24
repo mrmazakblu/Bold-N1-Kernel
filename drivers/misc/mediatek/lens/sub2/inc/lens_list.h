@@ -23,6 +23,13 @@ extern int AK7371AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t 
 extern long AK7371AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int AK7371AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
-
+/*prize  add  for main3 af by zhuzhengjiang    20190416-begin*/
+#define DW9718SAF_SetI2Cclient DW9718SAF_SetI2Cclient_Sub2
+#define DW9718SAF_Ioctl DW9718SAF_Ioctl_Sub2
+#define DW9718SAF_Release DW9718SAF_Release_Sub2
+extern int DW9718SAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9718SAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9718SAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+/*prize  add  for main3 af by zhuzhengjiang    20190416-end*/
 extern void AFRegulatorCtrl(int Stage);
 #endif

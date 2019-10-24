@@ -15,7 +15,21 @@
 #define __MT65XX_LCM_LIST_H__
 
 #include <lcm_drv.h>
-
+/*prize-add lcm-pengguangyi-20190119-start*/
+extern LCM_DRIVER hx83112_fhdp_dsi_vdo_auo_drv;
+/*prize-add lcm-pengguangyi-20190119-end*/
+/* prize added by chenjiaxi, add lcm, 20190111-start */
+extern LCM_DRIVER hx8394f_dsi_vdo_hd1440_hlt_55_hc_lcm_drv;
+extern LCM_DRIVER st7703_hd1440_dsi_vdo_xl_lcm_drv;
+extern LCM_DRIVER st7703_dsi_vdo_hd1440_dzx_55_hsd_lcm_drv;
+extern LCM_DRIVER ili9881d_hd1440_dsi_vdo_boe_lcm_drv;
+extern LCM_DRIVER ili9881d_hd1440_dsi_vdo_lt_lcm_drv;
+/* prize added by chenjiaxi, add lcm, 20190111-end */
+/* prize added by yaozhipeng, lcm, add ili9881c_jt st7703_bx st7703_bx ,20190126-start */
+extern LCM_DRIVER ili9881c_hj_dsi_vdo_ctc_jt_lcm_drv;
+extern LCM_DRIVER st7703_hd1440_dsi_vdo_lt_bx_lcm_drv;
+extern LCM_DRIVER st7703_hd1440_dsi_vdo_sc_bx_lcm_drv;
+/* prize added by yaozhipeng, lcm, add ili9881c_jt st7703_bx st7703_bx ,20190126-end */
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_8163_lcm_drv;
@@ -173,6 +187,9 @@ extern LCM_DRIVER cpt_clap070wp03xg_sn65dsi83_lcm_drv;
 extern LCM_DRIVER nt35520_hd720_tm_lcm_drv;
 extern LCM_DRIVER nt35520_hd720_boe_lcm_drv;
 extern LCM_DRIVER nt35521_hd720_dsi_vdo_boe_lcm_drv;
+/**prize added by yaozhipeng, nt35521, 20190118-start*/
+extern LCM_DRIVER nt35521_hd720_dsi_vdo_boe55_lcm_drv;
+/**prize added by yaozhipeng, nt35521, 20190118-end*/
 extern LCM_DRIVER nt35521_hd720_tm_lcm_drv;
 extern LCM_DRIVER r69429_wuxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER r69429_wuxga_dsi_cmd_lcm_drv;
@@ -299,10 +316,32 @@ extern LCM_DRIVER nt36672_fhdp_dsi_vdo_tianma_nt50358_lcm_drv;
 extern LCM_DRIVER jd9365_hd720_dsi_lcm_drv;
 extern LCM_DRIVER otm1901a_fhd_dsi_vdo_tpv_lcm_drv;
 extern LCM_DRIVER st7789h2_dbi_c_3wire_lcm_drv;
+/*prize added by yaozhipeng, jd9366, 20190118-start*/
+extern LCM_DRIVER jd9366_hd720_dsi_vdo_xm_lcm_drv;
+/*prize added by yaozhipeng, jd9366, 20190118-end*/
+//prize added by chenjiaxi, lcm td4100 driver, 20190111-start
+extern LCM_DRIVER td4100_hd720_dsi_vdo_jdi_incell_lcm_drv;
+//prize added by chenjiaxi, lcm td4100 driver, 20190111-end
+/*prize-add lcm ft8716f-pengguangyi-20190112-start*/
+extern LCM_DRIVER ft8716f_fhdp_dsi_vdo_auo618_lcm_drv;
+/*prize-add lcm ft8716-pengguangyi-20190112-end*/
+
+/*prize-add ili9881c-pengzhipeng-20180827-start*/
+
+#if defined(ILI9881C_HD_DSI_VDO_HSD)
+extern LCM_DRIVER ili9881c_hd_dsi_vdo_hsd_lcm_drv;
+#endif
+/*prize-add ili9881c-pengzhipeng-20180827-end*/
 extern LCM_DRIVER ssd2858_kd097d05_qxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER es6311_anx6585_zigzag_wxga_lcm_drv;
+/* begin, prize-20181205-lifenfen, add lcm r66455_fhdp_dsi_vdo_visionox */
+extern LCM_DRIVER r66455_fhdp_dsi_vdo_visionox_lcm_drv;
+/* end, prize-20181205-lifenfen, add lcm r66455_fhdp_dsi_vdo_visionox */
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
 
+// prize added by wangmengdong, lcm, add ili9881p ,20190122-start
+extern LCM_DRIVER ili9881p_hd1440_dsi_vdo_panda_hlt_lcm_drv;
+// prize added by wangmengdong, lcm, add ili9881p ,20190122-end
 #endif

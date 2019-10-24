@@ -89,6 +89,8 @@
 #include <teei_secure_api.h>
 
 #include <fdrv.h>
+#include <linux/topology.h>
+#include <asm/cputype.h>
 
 #if CONFIG_MICROTRUST_TZ_DRIVER_MTK_BOOTPROF
 #define TEEI_BOOT_FOOTPRINT(str) log_boot(str)
@@ -215,8 +217,21 @@ unsigned long boot_vfs_addr;
 unsigned long boot_soter_flag;
 unsigned long ut_pm_count;
 unsigned long device_file_cnt;
-static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101,
-				0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
+
+/* ARMv8.2 for CA55, CA75 etc */
+static int teei_cpu_id_arm82[] = {
+	0x81000000, 0x81000100, 0x81000200, 0x81000300,
+	0x81000400, 0x81000500, 0x81000600, 0x81000700,
+	0x81000800, 0x81000900, 0x81000a00, 0x81000b00};
+
+/* ARMv8 */
+static int teei_cpu_id_arm80[] = {
+		0x0000, 0x0001, 0x0002, 0x0003,
+		0x0100, 0x0101, 0x0102, 0x0103,
+		0x0200, 0x0201, 0x0202, 0x0203};
+
+static int *teei_cpu_id;
+
 unsigned int teei_flags;
 static dev_t teei_config_device_no;
 static struct cdev teei_config_cdev;
@@ -497,7 +512,7 @@ int handle_switch_core(int cpu)
 
 	switch_to_cpu_id = find_prefer_core(cpu);
 
-	IMSG_DEBUG("[%s][%d]brefore cpumask set cpu, find %d\n",
+	IMSG_DEBUG("[%s][%d]before cpumask set cpu, find %d\n",
 				__func__, __LINE__, switch_to_cpu_id);
 
 	set_cpus_allowed_ptr(teei_switch_task, cpumask_of(switch_to_cpu_id));
@@ -506,7 +521,48 @@ int handle_switch_core(int cpu)
 			teei_cpu_id[switch_to_cpu_id], teei_cpu_id[cpu], 0);
 
 	current_cpu_id = switch_to_cpu_id;
-	IMSG_DEBUG("change cpu id from [%d] to [%d]\n", cpu, switch_to_cpu_id);
+
+	IMSG_DEBUG("change cpu id from %d(0x%lx) to %d(0x%lx)\n",
+			cpu, teei_cpu_id[cpu],
+			switch_to_cpu_id, teei_cpu_id[switch_to_cpu_id]);
+
+	return 0;
+}
+
+
+int handle_move_core(int cpu)
+{
+	int original_cpu_id = 0;
+	int target_cpu_id = cpu;
+
+	original_cpu_id = get_current_cpuid();
+
+	IMSG_DEBUG("[%s][%d]brefore cpumask set cpu, find %d\n",
+					__func__, __LINE__, target_cpu_id);
+
+	set_cpus_allowed_ptr(teei_switch_task, cpumask_of(target_cpu_id));
+
+	teei_secure_call(N_SWITCH_CORE,
+			teei_cpu_id[target_cpu_id],
+			teei_cpu_id[original_cpu_id], 0);
+
+	current_cpu_id = target_cpu_id;
+	IMSG_DEBUG("change cpu id from [%d] to [%d]\n", target_cpu_id,
+					original_cpu_id);
+
+	return 0;
+}
+
+int tz_move_core(uint32_t cpu_id)
+{
+	ut_pm_mutex_lock(&pm_mutex);
+	if (!cpu_online(cpu_id)) {
+		IMSG_ERROR("The CPU %d is offline !\n", cpu_id);
+		ut_pm_mutex_unlock(&pm_mutex);
+		return -EINVAL;
+	}
+	add_work_entry(MOVE_CORE, (unsigned long)cpu_id);
+	ut_pm_mutex_unlock(&pm_mutex);
 
 	return 0;
 }
@@ -521,19 +577,33 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
 		if (cpu == sched_cpu) {
-			IMSG_DEBUG("cpu down prepare for %d.\n", cpu);
+			IMSG_DEBUG("TEEI: cpu down prepare for %d.\n", cpu);
 			add_work_entry(SWITCH_CORE,
 					(unsigned long)(unsigned long)cpu);
 		} else if (is_prefer_core(cpu))
-			IMSG_DEBUG("cpu down prepare for prefer %d.\n", cpu);
+			IMSG_DEBUG("TEEI: cpu down prepare for prefer %d.\n", cpu);
 		else if (!is_prefer_core_binded()
 				&& is_prefer_core_onlined()) {
-			IMSG_DEBUG("cpu down prepare for changing %d %d.\n",
+			IMSG_DEBUG("TEEI: cpu down prepare for changing %d %d.\n",
 								sched_cpu, cpu);
 			add_work_entry(SWITCH_CORE,
 				(unsigned long)(unsigned long)sched_cpu);
 		}
 		break;
+	//prize-wyq 20190326 rebound teei thread to big core cpu4 after resume-start
+	case CPU_ONLINE: 
+	case CPU_ONLINE_FROZEN:
+		IMSG_DEBUG("TEEI: cpu up: prepare for changing %d to %d.\n",
+                    sched_cpu, cpu);
+        if (cpu == TZ_PREFER_BIND_CORE) {
+            IMSG_DEBUG("TEEI: cpu up11: prepare for changing %d to %d.\n",
+                    sched_cpu, cpu);
+            add_work_entry(SWITCH_CORE,
+                (unsigned long)(unsigned long)sched_cpu);
+        }
+        break;
+	//prize-wyq 20190326 rebound teei thread to big core cpu4 after resume-end
+		
 	default:
 		break;
 	}
@@ -905,7 +975,9 @@ static int init_teei_framework(void)
 
 	teei_config_flag = 1;
 	complete(&global_down_lock);
+#ifdef CONFIG_MICROTRUST_FP_DRIVER
 	wake_up(&__fp_open_wq);
+#endif
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT All Completed");
 
 	return TEEI_BOOT_OK;
@@ -955,10 +1027,14 @@ static long teei_config_ioctl(struct file *file,
 
 			teei_flags = 1;
 
+			TEEI_BOOT_FOOTPRINT("TEEI start to load driver TAs");
+
 			for (i = 0; i < param.uuid_count; i++)
 				tz_load_drv_by_str(param.uuids[i]);
 
 			param.flag = teei_flags;
+
+			TEEI_BOOT_FOOTPRINT("TEEI end of load driver TAs");
 
 			res = copy_to_user((void *)arg, &param,
 					sizeof(struct init_param));
@@ -1794,7 +1870,7 @@ void show_utdriver_lock_status(void)
 		up(&api_lock);
 	}
 
-
+#ifdef CONFIG_MICROTRUST_FP_DRIVER
 	retVal = down_trylock(&fp_api_lock);
 	if (retVal == 1)
 		IMSG_PRINTK("[%s][%d] fp_api_lock is down\n",
@@ -1804,6 +1880,7 @@ void show_utdriver_lock_status(void)
 							__func__, __LINE__);
 		up(&fp_api_lock);
 	}
+#endif
 
 	retVal = down_trylock(&keymaster_api_lock);
 	if (retVal == 1)
@@ -1937,7 +2014,9 @@ static const struct file_operations teei_client_fops = {
 #else
 	.unlocked_ioctl = teei_client_ioctl,
 #endif
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = teei_client_ioctl,
+#endif
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,
 	.read = teei_client_dump,
@@ -2022,6 +2101,8 @@ static int teei_client_init(void)
 #ifdef TUI_SUPPORT
 	int pwr_pid = 0;
 #endif
+	//struct sched_param param = {.sched_priority = 50 };//set thread priority to speed up fingerprint unlocking
+
 
 	/* IMSG_DEBUG("TEEI Agent Driver Module Init ...\n"); */
 
@@ -2103,8 +2184,13 @@ static int teei_client_init(void)
 		IMSG_DEBUG("init stage : current_cpu_id = %d\n",
 							current_cpu_id);
 		/* break when first active cpu has been selected */
-		break;
+		//break;//prize-wyq 20190321 selecte cpu7 to speed up fingerprint unlocking
 	}
+
+	if (read_cpuid_mpidr() & MPIDR_MT_BITMASK)
+		teei_cpu_id = teei_cpu_id_arm82;
+	else
+		teei_cpu_id = teei_cpu_id_arm80;
 
 	IMSG_DEBUG("begin to create sub_thread.\n");
 
@@ -2118,6 +2204,8 @@ static int teei_client_init(void)
 		teei_switch_task = NULL;
 		goto class_device_destroy;
 	}
+
+	//sched_setscheduler_nocheck(teei_switch_task, SCHED_FIFO, &param);//set thread priority to speed up fingerprint unlocking
 
 	wake_up_process(teei_switch_task);
 	cpumask_set_cpu(get_current_cpuid(), &mask);
@@ -2194,4 +2282,3 @@ MODULE_VERSION("1.00");
 module_init(teei_client_init);
 
 module_exit(teei_client_exit);
-

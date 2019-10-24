@@ -79,6 +79,15 @@ static DEFINE_MUTEX(consumer_mutex);
 
 #define USE_FG_TIMER 1
 
+
+/* prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start */
+#if defined(CONFIG_MTK_CW2015_SUPPORT)
+extern int g_cw2015_capacity;
+extern int g_cw2015_vol;
+extern int cw2015_exit_flag;
+#endif
+/* prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start */
+
 bool is_power_path_supported(void)
 {
 	if (pinfo == NULL)
@@ -387,6 +396,19 @@ int charger_manager_enable_charging(struct charger_consumer *consumer,
 	return ret;
 }
 
+//prize added by sunshuai, Only the wireless 9 volt charging time limit takes effect, 20190307-start
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+extern int  get_mt5715_9V_charge_status(void);
+//prize added by sunshuai, Only the wireless 9 volt charging time limit takes effect, 20190307-end
+#endif
+
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for ne6153 201900413 start 
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+extern bool get_ne6153_ischarge_9V(void);
+#endif
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for ne6153 201900413 end 
+
+
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
@@ -402,9 +424,36 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 		else
 			return -ENOTSUPP;
 
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for mt5715 201900305 start
+
+	 pdata->thermal_input_current_limit = -1;
+
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+    if(get_mt5715_9V_charge_status() == 1){//wireless charging 9V
 		pdata->thermal_input_current_limit = input_current;
-		chr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
-		idx, input_current);
+		chr_err("%s: mt5715 9V charge \n",__func__);
+	}
+	else{
+		chr_err("%s: no  mt5715 9V charge \n",__func__);
+	}
+#endif
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for mt5715 201900305 end
+
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for ne6153 201900413 start 
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+    if(get_ne6153_ischarge_9V() ==true){
+		pdata->thermal_input_current_limit = input_current;
+		chr_err("%s: NE6153 9V charge \n",__func__);
+    }
+	else{
+		chr_err("%s: no  NE6153 9V charge \n",__func__);
+	}
+#endif
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for ne6153 201900413 end 
+
+
+		chr_err("%s: dev:%s idx:%d en:%d  pdata->thermal_input_current_limit =%d \n", __func__, dev_name(consumer->dev),
+		idx, input_current,pdata->thermal_input_current_limit);
 		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
@@ -427,9 +476,36 @@ int charger_manager_set_charging_current_limit(struct charger_consumer *consumer
 		else
 			return -ENOTSUPP;
 
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for mt5715 201900305 start
+     pdata->thermal_charging_current_limit = -1;
+
+#if defined(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715)
+    if(get_mt5715_9V_charge_status() == 1){//wireless charging 9V
 		pdata->thermal_charging_current_limit = charging_current;
-		chr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
-		idx, charging_current);
+		chr_err("%s: mt5715 9V charge \n",__func__);
+	}
+	else{
+		chr_err("%s: no mt5715 9V charge \n",__func__);
+	}
+#endif
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for mt5715 201900305 end
+
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for ne6153 201900413 start 
+#if defined(CONFIG_PRIZE_NE6153_SUPPORT)
+    if(get_ne6153_ischarge_9V() ==true){
+		pdata->thermal_charging_current_limit = charging_current;
+		chr_err("%s: mt5715 9V charge \n",__func__);
+	}
+	else{
+		chr_err("%s: no  NE6153 9V charge \n",__func__);
+	}
+
+#endif
+//prize added by sunshuai Modification did not reach the high temperature 55 standard stop charging problem for for ne6153  201900413 end
+
+
+		chr_err("%s: dev:%s idx:%d en:%d pdata->thermal_charging_current_limit=%d\n", __func__, dev_name(consumer->dev),
+		idx, charging_current,pdata->thermal_charging_current_limit);
 		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
@@ -1239,13 +1315,14 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 				info->battery_temperature);
 		}
 	} else {
-#ifdef BAT_LOW_TEMP_PROTECT_ENABLE
+//prize-add start sunshuai  Turn on low temperature warning
+//#ifdef BAT_LOW_TEMP_PROTECT_ENABLE
 		if (info->battery_temperature < info->thermal.min_charge_temperature) {
 			info->notify_code |= 0x0020;
 			chr_err("[BATTERY] bat_temp(%d) out of range(too low)\n",
 				info->battery_temperature);
 		}
-#endif
+//#endif
 	}
 #endif
 }
@@ -1328,6 +1405,11 @@ static void charger_check_status(struct charger_manager *info)
 	bool charging = true;
 	int temperature;
 	struct battery_thermal_protection_data *thermal;
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start 
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+	struct timespec time_now, charging_time;
+#endif
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 end 
 
 	temperature = info->battery_temperature;
 	thermal = &info->thermal;
@@ -1380,6 +1462,65 @@ static void charger_check_status(struct charger_manager *info)
 			}
 		}
 	}
+
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start 
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+   chr_err("charger_check_status before choice current_step =%d \n",info->step_info.current_step);
+   if(temperature >= info->step_info.start_step1_temp && temperature < info->step_info.start_step2_temp){
+       info->step_info.current_step = STEP_T1;
+
+	   info->step_info.enter_step3_battery_percentage = -1;
+	   info->step_info.step3_total_limit_time =0;
+	   info->step_info.step3_limit_timeout = 0;
+       chr_err("charge step 1 temperature =%d battery_vol =%d\n",info->battery_temperature,g_cw2015_vol);
+   }else if(temperature >= info->step_info.start_step2_temp && temperature <= info->step_info.start_step3_temp){
+       if(info->step_info.current_step == STEP_T1 || info->step_info.current_step == STEP_INIT){
+			info->step_info.current_step = STEP_T2;
+
+			info->step_info.enter_step3_battery_percentage = -1;
+			info->step_info.step3_limit_timeout = 0;
+			info->step_info.step3_total_limit_time =0;
+            chr_err("charge step 2 temperature =%d battery_vol =%d\n",info->battery_temperature,g_cw2015_vol);
+        }
+
+		if(info->step_info.current_step == STEP_T3){
+			if(temperature < info->step_info.exit_step3_temp){
+				info->step_info.current_step = STEP_T2;
+
+			    info->step_info.enter_step3_battery_percentage = -1;
+				info->step_info.step3_limit_timeout = 0;
+			    info->step_info.step3_total_limit_time =0;
+			}else{
+			    get_monotonic_boottime(&time_now);
+			    charging_time = timespec_sub(time_now, info->step_info.step3_limit_begin_time);
+			    info->step_info.step3_total_limit_time = charging_time.tv_sec;
+
+			    chr_err("%s: step3_total_limit_time: %u step3_limit_timeout=%d \n", __func__,info->step_info.step3_total_limit_time,info->step_info.step3_limit_timeout);
+			    if (info->step_info.step3_total_limit_time >= 600){
+				   info->step_info.step3_limit_timeout = 1;
+			    }
+		   }
+		}
+   }else if(temperature > info->step_info.start_step3_temp && temperature < info->step_info.end_step3_temp){
+	   info->step_info.current_step = STEP_T3;
+
+	   if((g_cw2015_vol < info->data.battery_cv && g_cw2015_vol > 4100) && info->step_info.enter_step3_battery_percentage == -1){
+           info->step_info.enter_step3_battery_percentage = g_cw2015_capacity;
+		   get_monotonic_boottime(&info->step_info.step3_limit_begin_time);
+		   info->step_info.step3_total_limit_time =0;
+		   info->step_info.step3_limit_timeout = 0;
+		   chr_err("%s: begin: %ld\n", __func__,info->step_info.step3_limit_begin_time.tv_sec);
+	   }
+
+	   chr_err("charge step 3 temperature =%d battery_vol =%d ,enter_step3_battery_percentage %d  battery_cv=%d\n",
+           info->battery_temperature,g_cw2015_vol,
+           info->step_info.enter_step3_battery_percentage,info->data.battery_cv);
+   }else{
+          chr_err("temp >60 or < -5 temperature =%d  battery_vol =%d\n",info->battery_temperature,g_cw2015_vol);
+   }
+   chr_err("charger_check_status after choice  current_step =%d \n",info->step_info.current_step);
+#endif
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 end 
 
 	mtk_chg_get_tchg(info);
 
@@ -1861,6 +2002,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 			"use default MIN_CHARGE_TEMPERATURE:%d\n", MIN_CHARGE_TEMPERATURE);
 		info->thermal.min_charge_temperature = MIN_CHARGE_TEMPERATURE;
 	}
+	printk(" MIN_CHARGE_TEMPERATURE:%d\n", info->thermal.min_charge_temperature);
 
 	if (of_property_read_u32(np, "min_charge_temperature_plus_x_degree", &val) >= 0) {
 		info->thermal.min_charge_temperature_plus_x_degree = val;
@@ -2074,6 +2216,62 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.max_charging_time = MAX_CHARGING_TIME;
 	}
 
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 start 
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_GIGAST)
+
+	if (of_property_read_u32(np, "start_step1_temp", &val) >= 0) {
+			info->step_info.start_step1_temp = val;
+		} else {
+			chr_err(
+				"use default start_step1_temp:%d\n", -5);
+			info->step_info.start_step1_temp = -5;
+	}
+
+	if (of_property_read_u32(np, "start_step2_temp", &val) >= 0) {
+			info->step_info.start_step2_temp = val;
+	} else {
+			chr_err(
+				"use default start_step2_temp:%d\n", 15);
+			info->step_info.start_step2_temp = 15;
+	}
+
+	if (of_property_read_u32(np, "start_step3_temp", &val) >= 0) {
+			info->step_info.start_step3_temp = val;
+	} else {
+			chr_err(
+				"use default start_step3_temp:%d\n", 45);
+			info->step_info.start_step3_temp = 45;
+	}
+
+	if (of_property_read_u32(np, "end_step3_temp", &val) >= 0) {
+			info->step_info.end_step3_temp = val;
+	} else {
+			chr_err(
+				"use default end_step3_temp:%d\n", 55);
+			info->step_info.end_step3_temp = 55;
+	}
+
+	if (of_property_read_u32(np, "exit_step3_temp", &val) >= 0) {
+			info->step_info.exit_step3_temp = val;
+	} else {
+			chr_err(
+				"use default exit_step3_temp:%d\n", 40);
+			info->step_info.exit_step3_temp = 40;
+	}
+
+	info->step_info.enter_step3_battery_percentage = -1;
+	info->step_info.step3_total_limit_time = 0;
+
+	info->step_info.current_step = STEP_INIT;
+	chr_err("info->step_info.start_step1_temp:%d\n", info->step_info.start_step1_temp);
+	chr_err("info->step_info.start_step2_temp:%d\n", info->step_info.start_step2_temp);
+	chr_err("info->step_info.start_step3_temp:%d\n", info->step_info.start_step3_temp);
+	chr_err("info->step_info.end_step3_temp:%d\n", info->step_info.end_step3_temp);
+	chr_err("info->step_info.exit_step3_temp:%d\n", info->step_info.exit_step3_temp);
+
+#endif
+//prize-add by sunshuai for vestel  customer  requires charging to be controlled according to the battery specification 201900724 end 
+
 	chr_err("algorithm name:%s\n", info->algorithm_name);
 
 	return 0;
@@ -2262,6 +2460,18 @@ static ssize_t show_ADC_Charger_Voltage(struct device *dev, struct device_attrib
 
 static DEVICE_ATTR(ADC_Charger_Voltage, 0444, show_ADC_Charger_Voltage, NULL);
 
+//add by mahuiyin 20190410 start
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+int is_chg2_exist = 0;
+///sys/devices/platform/charger/chg2_exist
+static ssize_t show_chg2_exist(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", is_chg2_exist);
+}
+static DEVICE_ATTR(chg2_exist, 0444, show_chg2_exist, NULL);
+#endif
+//add by mahuiyin 20190410 end
+
 /* procfs */
 static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
 {
@@ -2446,6 +2656,14 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	if (ret)
 		goto _out;
 
+//add by mahuiyin 20190410 start
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+	ret = device_create_file(&(pdev->dev), &dev_attr_chg2_exist);
+	if (ret)
+		goto _out;
+#endif
+//add by mahuiyin 20190410 start
+
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
 		chr_err("[%s]: mkdir /proc/mtk_battery_cmd failed\n", __func__);
@@ -2537,6 +2755,65 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb, unsigned long event,
 	}
 	return NOTIFY_OK;
 }
+
+//prize-add by sunshuai for Bright screen current limit  20181130 start 
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_POLICY)
+#include <linux/fb.h>
+
+int g_charge_is_screen_on = 1;
+
+static int charge_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = NULL;
+	int blank;
+	//int err = 0;
+	evdata = data;
+	/* If we aren't interested in this event, skip it immediately ... */
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+	switch (blank) {
+		case FB_BLANK_UNBLANK:
+			g_charge_is_screen_on = 1;
+			break;
+		case FB_BLANK_POWERDOWN:
+			g_charge_is_screen_on = 0;
+			break;
+		default:
+			break;
+	}
+	chr_err("%s: g_charge_is_screen_on[%d]\n", __func__,g_charge_is_screen_on);
+	return 0;
+}
+static struct notifier_block charge_fb_notifier = {
+	.notifier_call = charge_fb_notifier_callback,
+};
+#endif
+//prize-add by sunshuai for Bright screen current limit  20181130 end 
+
+//start add by sunshuai 2019-04-03 for charge  current  show
+extern int mt6370_get_ibat(struct charger_device *chg_dev, u32 *ibat);
+
+int get_6370_ibat_interface(void){
+   int ibus =0;
+   int ibat =0;
+   
+   if(pinfo->thermal.sm == BAT_TEMP_LOW || pinfo->thermal.sm == BAT_TEMP_HIGH)//add by sunshuai 2019-04-04 for charge  current  show
+	   return ibat;
+
+   if((pinfo->chg1_dev != NULL) && (pinfo->thermal.sm == BAT_TEMP_NORMAL)){
+   	 ibat=mt6370_get_ibat(pinfo->chg1_dev,&ibus);
+	 if(ibat ==0)
+	 	ibat = ibus;
+   }else{
+     printk("get_6370_ibat_interface  pinfo->chg1_dev no init \n");
+   }
+   
+   return ibat;
+}
+EXPORT_SYMBOL(get_6370_ibat_interface);
+//end add by sunshuai 2019-04-03 for charge  current  show
 
 static int mtk_charger_probe(struct platform_device *pdev)
 {
@@ -2631,6 +2908,15 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg1_consumer = charger_manager_get_by_name(&pdev->dev, "charger_port1");
 	info->init_done = true;
 	_wake_up_charger(info);
+
+// start add by sunshuai for Bright screen current limit  20181130
+#if defined(CONFIG_PRIZE_CHARGE_CTRL_POLICY)
+	ret = fb_register_client(&charge_fb_notifier);
+	if (ret)
+		pr_debug("[%s] failed to register charger_fb_notifier_block %d\n", __func__, ret);
+#endif
+// end	add by sunshuai for Bright screen current limit  20181130
+
 
 	return 0;
 }

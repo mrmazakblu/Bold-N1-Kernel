@@ -103,6 +103,35 @@ struct compat_biometric_threshold {
 #define COMPAT_GSENSOR_IOCTL_SELF_TEST		_IO(GSENSOR, 0x0A)
 #endif
 
+//add by prize odm begin
+//mxc400x
+#define GSENSOR_IOCTL_GET_DELAY                              _IOR(GSENSOR, 0x10, int)
+#define GSENSOR_IOCTL_GET_STATUS                    _IOR(GSENSOR, 0x11, int)
+#define GSENSOR_IOCTL_GET_DATA                                 _IOR(GSENSOR, 0x12, int[3])
+#define GSENSOR_IOCTL_SET_DATA                                  _IOW(GSENSOR, 0x13, int[3])
+#define GSENSOR_IOCTL_GET_TEMP                                 _IOR(GSENSOR, 0x14, int)
+#define GSENSOR_IOCTL_GET_DANT                                 _IOR(GSENSOR, 0x15, int[4])
+#define GSENSOR_IOCTL_READ_REG                                 _IOR(GSENSOR, 0x19, int)
+#define GSENSOR_IOCTL_GET_POWER_STATUS      _IOR(GSENSOR, 0x20, int)
+#define GSENSOR_IOCTL_GET_LAYOUT            _IOR(GSENSOR, 0x21, int)
+#define GSENSOR_IOCTL_WRITE_REG				_IOW(GSENSOR, 0x1A, int)
+#define GSENSOR_IOCTL_GET_OPEN_STATUS		_IOR(GSENSOR, 0x22, int)
+//add by prize odm end
+
+//add by prize odm begin
+//mxc400x
+#define COMPAT_GSENSOR_IOCTL_GET_DELAY                              _IOR(GSENSOR, 0x10, int)
+#define COMPAT_GSENSOR_IOCTL_GET_STATUS                    _IOR(GSENSOR, 0x11, int)
+#define COMPAT_GSENSOR_IOCTL_GET_DATA                                 _IOR(GSENSOR, 0x12, int[3])
+#define COMPAT_GSENSOR_IOCTL_SET_DATA                                  _IOW(GSENSOR, 0x13, int[3])
+#define COMPAT_GSENSOR_IOCTL_GET_TEMP                                 _IOR(GSENSOR, 0x14, int)
+#define COMPAT_GSENSOR_IOCTL_GET_DANT                                 _IOR(GSENSOR, 0x15, int[4])
+#define COMPAT_GSENSOR_IOCTL_READ_REG                                 _IOR(GSENSOR, 0x19, int)
+#define COMPAT_GSENSOR_IOCTL_GET_POWER_STATUS      _IOR(GSENSOR, 0x20, int)
+#define COMPAT_GSENSOR_IOCTL_GET_LAYOUT            _IOR(GSENSOR, 0x21, int)
+#define COMPAT_GSENSOR_IOCTL_WRITE_REG                                _IOW(GSENSOR, 0x1A, int)
+#define COMPAT_GSENSOR_IOCTL_GET_OPEN_STATUS          _IOR(GSENSOR, 0x22, int)
+
 /* IOCTLs for Msensor misc. device library */
 #define MSENSOR								0x83
 #define MSENSOR_IOCTL_INIT						_IO(MSENSOR, 0x01)
@@ -159,8 +188,12 @@ struct compat_biometric_threshold {
 
 #define ALSPS								0x84
 #define ALSPS_SET_PS_MODE					_IOW(ALSPS, 0x01, int)
+#define ALSPS_GET_PS_MODE				_IOR(ALSPS, 0x02, int)	//PRIZE
+#define ALSPS_GET_PS_DATA				_IOR(ALSPS, 0x03, int)	//PRIZE
 #define ALSPS_GET_PS_RAW_DATA				_IOR(ALSPS, 0x04, int)
 #define ALSPS_SET_ALS_MODE					_IOW(ALSPS, 0x05, int)
+#define ALSPS_GET_ALS_MODE				_IOR(ALSPS, 0x06, int)	//PRIZE
+#define ALSPS_GET_ALS_DATA				_IOR(ALSPS, 0x07, int)	//PRIZE
 #define ALSPS_GET_ALS_RAW_DATA				_IOR(ALSPS, 0x08, int)
 
 /*-------------------MTK add-------------------------------------------*/
@@ -177,6 +210,7 @@ struct compat_biometric_threshold {
 #define ALSPS_ALS_ENABLE_CALI				_IO(ALSPS, 0x17)
 #define ALSPS_PS_ENABLE_CALI				_IO(ALSPS, 0x18)
 #define ALSPS_IOCTL_ALS_GET_CALI			_IOW(ALSPS, 0x19, int)
+#define ALSPS_ALS_SET_CALI _IOW(ALSPS, 0x20, int)//add by mahuiyin 20190412
 #ifdef CONFIG_COMPAT
 #define COMPAT_ALSPS_SET_PS_MODE			_IOW(ALSPS, 0x01, compat_int_t)
 #define COMPAT_ALSPS_GET_PS_RAW_DATA		_IOR(ALSPS, 0x04, compat_int_t)

@@ -52,10 +52,10 @@
 #define LENS_I2C_BUSNUM 1
 #define I2C_REGISTER_ID            0x27
 #endif
-
-#define PLATFORM_DRIVER_NAME "lens_actuator_sub_af"
-#define AF_DRIVER_CLASS_NAME "actuatordrv_sub_af"
-
+/*prize  add  for main3 af by zhuzhengjiang    20190416-begin*/
+#define PLATFORM_DRIVER_NAME "lens_actuator_sub2_af"  //lens_actuator_sub_af
+#define AF_DRIVER_CLASS_NAME "actuatordrv_sub2_af"    //actuatordrv_sub_af
+/*prize  add  for main3 af by zhuzhengjiang    20190416-end*/
 
 #if I2C_CONFIG_SETTING == 1
 static struct i2c_board_info kd_lens_dev __initdata = {
@@ -86,6 +86,9 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 #if 0
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release, NULL},
 #endif
+/*prize  add  for main3 af by zhuzhengjiang    20190416-begin*/
+{1, AFDRV_DW9718SAF, DW9718SAF_SetI2Cclient, DW9718SAF_Ioctl, DW9718SAF_Release, NULL},
+/*prize  add  for main3 af by zhuzhengjiang    20190416-end*/
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;

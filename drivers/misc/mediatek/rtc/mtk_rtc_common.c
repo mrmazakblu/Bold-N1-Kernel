@@ -54,6 +54,13 @@
 #include <linux/sched.h>
 #include <linux/types.h>
 #include <linux/reboot.h>
+/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-start */
+#ifdef CONFIG_PRIZE_DDR_TEST
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_gpio.h>
+#endif
+/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-end */
 #include <asm/div64.h>
 
 
@@ -73,7 +80,11 @@
 #ifdef CONFIG_MTK_SMART_BATTERY
 #include <mt-plat/charging.h>
 #endif
-
+/* prize added by pengzhipeng, EMMC TEST, 20190321-start */
+#ifdef CONFIG_PRIZE_DDR_TEST
+#include <mtk_rtc_hw.h>
+#endif
+/* prize added by pengzhipeng, EMMC TEST, 20190321-end */
 #define RTC_NAME	"mt-rtc"
 #define RTC_RELPWR_WHEN_XRST	1	/* BBPU = 0 when xreset_rstb goes low */
 
@@ -751,17 +762,157 @@ static int rtc_ops_ioctl(struct device *dev, unsigned int cmd, unsigned long arg
 	return -ENOIOCTLCMD;
 }
 
-static struct rtc_class_ops rtc_ops = {
+static const struct rtc_class_ops rtc_ops = {
 	.read_time = rtc_ops_read_time,
 	.set_time = rtc_ops_set_time,
 	.read_alarm = rtc_ops_read_alarm,
 	.set_alarm = rtc_ops_set_alarm,
 	.ioctl = rtc_ops_ioctl,
 };
+/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-start */
+#ifdef CONFIG_PRIZE_DDR_TEST
+static struct kobject *rtc_ddr_sign_kobj = NULL;
+static struct kobject *emmc_ddr_led_kobj = NULL;
+
+static ssize_t show_rtc_ddr_sign_value(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+       int temp_spare, ddr_mode;
+	   
+	   temp_spare = rtc_read(RTC_AL_DOW);
+	   ddr_mode = temp_spare >> 8;
+       return sprintf(buf, "%d\n", ddr_mode);
+}
+static ssize_t store_rtc_ddr_sign_value(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+       unsigned long temp_spare, ddr_mode;
+
+       printk("lsw_ddr_sign %s %d\n)",__func__,__LINE__);
+       if (kstrtoul(buf, 10, &ddr_mode))
+               return -EINVAL;
+
+       printk("lsw_ddr_sign %s %d ddr_sign=%lx\n)",__func__,__LINE__,ddr_mode);
+       if (ddr_mode < 0)
+               return -EINVAL;
+               
+       ddr_mode = ddr_mode << 8;
+	   temp_spare = rtc_read(RTC_AL_DOW);
+	   temp_spare = (temp_spare & RTC_AL_DOW_MASK);
+	   rtc_write(RTC_AL_DOW, ddr_mode | temp_spare);
+       rtc_write_trigger();
+       printk("lsw_ddr_sign %s %d ddr_sign=%lx new_spare3=%lx\n)",__func__,__LINE__,ddr_mode,temp_spare);
+               
+       return count;
+}
+static struct kobj_attribute rtc_ddr_sign_attr = {
+	.attr = {
+		 .name = "rtc_ddr_value",
+		 .mode = 0666,
+		 },
+	.show = show_rtc_ddr_sign_value,
+	.store = store_rtc_ddr_sign_value,
+};
+
+static ssize_t show_ddr_emmc_led_sign_value(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+       int temp_spare, ddr_mode;
+       temp_spare = rtc_read(RTC_AL_DOW);
+       ddr_mode = temp_spare >> 8;
+       
+       return sprintf(buf, "%d\n", ddr_mode);
+}
+
+static int red_led;
+static int green_led;
+static ssize_t store_ddr_emmc_led_sign_value(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+       unsigned long ddr_emmc_led_sign;
+/* prize modified by lifenfen, ddr  test, 20190515 begin */
+	   int ret = 0;
+/* prize modified by lifenfen, ddr  test, 20190515 end */
+
+       printk("ddr_emmc_led_sign %s %d\n)",__func__,__LINE__);
+       if (kstrtoul(buf, 10, &ddr_emmc_led_sign))
+               return -EINVAL;
+
+/* prize modified by lifenfen, ddr  test, 20190515 begin */
+		ret = gpio_request(red_led,"ddr_red");
+		if (ret) {
+			pr_err("request red_led %d failed\n", red_led);
+			red_led = -1;
+		} else {
+			pr_err("request red_led %d ok\n", red_led);
+		}
+
+		ret = gpio_request(green_led,"ddr_green");
+		if (ret) {
+			pr_err("request green_led %d failed\n", green_led);
+			green_led = -1;
+		} else {
+			pr_err("request green_led %d ok\n", green_led);
+		}
+
+		if (!gpio_is_valid(red_led) || !gpio_is_valid(green_led))
+			return -1;
+/* prize modified by lifenfen, ddr  test, 20190515 end */
+
+       printk("%s %d ddr_emmc_led_sign=%lx\n)",__func__,__LINE__,ddr_emmc_led_sign);
+       if(ddr_emmc_led_sign)
+       {
+/* prize modified by lifenfen, ddr  test, 20190515 begin */
+		   gpio_free(red_led);
+		   gpio_free(green_led);
+/* prize modified by lifenfen, ddr  test, 20190515 end */
+		   while(1)
+		   {
+            gpio_direction_output(red_led,0);
+			gpio_set_value(red_led,0);
+			gpio_direction_output(green_led,1);
+			gpio_set_value(green_led,1);
+			mdelay(1000);
+			gpio_direction_output(red_led,0);
+			gpio_set_value(red_led,0);
+			gpio_direction_output(green_led,0);
+			gpio_set_value(green_led,0);
+			mdelay(1000);
+		   }
+               
+       }
+	   else
+       {
+            gpio_direction_output(red_led,1);
+			gpio_set_value(red_led,1);
+			gpio_direction_output(green_led,0);
+			gpio_set_value(green_led,0);
+/* prize modified by lifenfen, ddr  test, 20190515 begin */
+			gpio_free(red_led);
+			gpio_free(green_led);
+/* prize modified by lifenfen, ddr  test, 20190515 end */
+       }
+       return count;
+}
+static struct kobj_attribute ddr_emmc_led_attr = {
+       .attr = {
+                .name = "ddr_emmc_led",
+                .mode = 0666,
+                },
+       .show = show_ddr_emmc_led_sign_value,
+       .store = store_ddr_emmc_led_sign_value,
+};
+#endif
+/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-end */
 
 static int rtc_pdrv_probe(struct platform_device *pdev)
 {
 	unsigned long flags;
+	/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-start */
+
+#ifdef CONFIG_PRIZE_DDR_TEST
+	int ret = -1;
+	
+	unsigned long temp_spare,ddr_mode;
+	struct device_node *node = NULL;
+#endif
+	/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-end */
 
 	/* only enable LPD interrupt in engineering build */
 	spin_lock_irqsave(&rtc_lock, flags);
@@ -780,13 +931,72 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 
 	pmic_register_interrupt_callback(RTC_INTERRUPT_NUM, rtc_irq_handler);
 	pmic_enable_interrupt(RTC_INTERRUPT_NUM, 1, "RTC");
-
+	/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-start */
+#ifdef CONFIG_PRIZE_DDR_TEST
+	node = of_find_compatible_node(NULL,NULL,"ddr_led");
+	red_led = of_get_named_gpio(node,"ddr_red",0);
+	green_led = of_get_named_gpio(node,"ddr_green",0);
+/* prize deleted by lifenfen, ddr  test, 20190515 begin */
+#if 0
+	gpio_request(red_led,"ddr_red");
+	gpio_request(green_led,"ddr_green");
+#endif
+/* prize deleted by lifenfen, ddr  test, 20190515 end */
+	
+	rtc_ddr_sign_kobj = kobject_create_and_add("rtc_ddr_sign", kernel_kobj);
+       if (!rtc_ddr_sign_kobj){
+		pr_err(" kernel kobject_create_and_add error \r\n"); 
+               return -1;
+       }else{
+               
+            ret =  sysfs_create_file(rtc_ddr_sign_kobj, &rtc_ddr_sign_attr.attr);
+            if (ret)
+				pr_err(" kernel sysfs_create_file error \r\n");	
+            else
+            {
+                ddr_mode = 255 << 8;
+                temp_spare = rtc_read(RTC_AL_DOW);
+                temp_spare = (temp_spare  & RTC_AL_DOW_MASK);
+                rtc_write(RTC_AL_DOW, ddr_mode | temp_spare);
+                rtc_write_trigger();
+                printk("lsw_ddr_sign 111 %s %d ddr_sign=%lx new_spare3=%lx\n)",__func__,__LINE__,ddr_mode,temp_spare);
+            }       
+      }
+               
+       emmc_ddr_led_kobj = kobject_create_and_add("ddr_emmc_led", kernel_kobj);
+       if (!emmc_ddr_led_kobj){
+               pr_err("  ddr_emmc_led kernel kobject_create_and_add error \r\n"); 
+               return -1;
+       }else{
+               
+               ret =  sysfs_create_file(emmc_ddr_led_kobj, &ddr_emmc_led_attr.attr);
+               if (ret)
+                       pr_err(" ddr_emmc_led kernel sysfs_create_file error \r\n");
+       }
+#endif	
+	/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-end */
+	
 	return 0;
 }
 
 /* should never be called */
 static int rtc_pdrv_remove(struct platform_device *pdev)
 {
+	/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-start */
+#ifdef CONFIG_PRIZE_DDR_TEST
+	       if (!rtc_ddr_sign_kobj && !emmc_ddr_led_kobj){
+               return 0;
+       }
+       if (rtc_ddr_sign_kobj){
+               sysfs_remove_file(rtc_ddr_sign_kobj, &rtc_ddr_sign_attr.attr);
+               kobject_put(rtc_ddr_sign_kobj);
+       }
+       if(emmc_ddr_led_kobj){
+               sysfs_remove_file(emmc_ddr_led_kobj, &ddr_emmc_led_attr.attr);
+               kobject_put(emmc_ddr_led_kobj);
+       }
+#endif
+	/* prize added by pengzhipeng, DRR_LED EMMC TEST, 20190321-end */
 	return 0;
 }
 

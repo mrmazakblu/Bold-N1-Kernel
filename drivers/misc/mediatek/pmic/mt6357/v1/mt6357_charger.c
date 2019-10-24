@@ -22,6 +22,10 @@
 #include "include/pmic.h"
 
 #include "mtk_charger_intf.h"
+//prize-add wyq 20181119, add for battery charging full check-start
+#include <mt-plat/mtk_battery.h>
+#include <mtk_battery_internal.h>
+//prize-add wyq 20181119, add for battery charging full check-end
 
 struct mt6357_charger_desc {
 	u32 ichg;		/* uA */
@@ -75,6 +79,13 @@ static const u32 VBAT_OV_VTH[] = {
 	4200000, 4200000, 4300000, 4400000,
 	4450000, 4500000, 4600000, 4700000,
 };
+
+//prize-add wyq 20181119, add for battery charging full check-start,
+#ifdef CONFIG_MTK_AW3216_CHARGER
+static int check_count = 0;
+static int battery_full = 0;
+#endif
+//prize-add wyq 20181119, add for battery charging full check-end,
 
 static u32 charging_value_to_parameter(const u32 *parameter,
 					const u32 array_size,
@@ -196,6 +207,19 @@ static int mt6357_plug_in(struct charger_device *chg_dev)
 
 	return ret;
 }
+
+//prize-add wyq 20181119, add for battery charging full check-start
+static int mt6357_plug_out(struct charger_device *chg_dev)
+{
+	int ret = 0;
+	
+#ifdef CONFIG_MTK_AW3216_CHARGER
+	check_count = 0;
+	battery_full = 0;
+#endif
+	return ret;
+}
+//prize-add wyq 20181119, add for battery charging full check-end
 
 static int mt6357_enable_charging(struct charger_device *chg_dev, bool en)
 {
@@ -372,10 +396,55 @@ static int mt6357_do_event(struct charger_device *chg_dev, u32 event, u32 args)
 	return 0;
 }
 
+//prize-add wyq 20181119, add for battery charging full check-start,
+static int mt6357_is_charging_done(struct charger_device *chg_dev, bool *done)
+{
+#ifdef CONFIG_MTK_AW3216_CHARGER
+	int ui_soc = 0;
+	int bat_volt = 0;
+	int chr_current = 0;
+	#define VRECHARGE 4320
+	
+	ui_soc = battery_get_uisoc();
+	chr_current = battery_get_bat_current() / 10;
+	bat_volt = battery_get_bat_voltage();
+	printk("mtk_switch_chr_cc ui_soc:%d, current:%d, bat_volt:%d, count:%d, full:%d\n", ui_soc, chr_current, bat_volt, check_count, battery_full);
+
+	/* if bat_volt drop below Vrechg, recharge battery */
+	if (bat_volt < VRECHARGE) {
+		*done = 0;
+		check_count = 0;
+		battery_full = 0;
+	}
+	/* if ui_soc reaches 100 and charging current less than 150mA , wait until stable*/
+	else if (ui_soc == 100 && chr_current < 150 && !battery_full && check_count < 6) {
+		check_count++;
+		*done = 0;
+		chr_err("mt6357_is_charging_done, count:%d\n", check_count);
+	}
+	/* if ui_soc reaches 100 and charging current less than 150mA keep 1min, charging done*/
+	else if (!battery_full && check_count >= 6) {
+		*done = 1;
+		battery_full = 1;
+		chr_err("mt6357 charger, battery full!\n");
+	}
+	/* charging done, until battery voltage drop below Vrechg */
+	else if (battery_full == 1) {
+		*done = 1;
+	}
+	else
+		*done = 0;
+#endif
+
+	return 0;
+
+}
+//prize-add wyq 20181119, add for battery charging full check-end
+
 static struct charger_ops mt6357_charger_ops = {
 	/* normal charging */
 	.plug_in = mt6357_plug_in,
-	/* .plug_out = mt6357_plug_out, */
+	.plug_out = mt6357_plug_out,//prize-add wyq 20181119, add for battery charging full check
 	.enable = mt6357_enable_charging,
 	.is_enabled = mt6357_is_charging_enabled,
 	.get_charging_current = mt6357_get_ichg,
@@ -385,15 +454,19 @@ static struct charger_ops mt6357_charger_ops = {
 	.set_constant_voltage = mt6357_set_cv,
 	.kick_wdt = mt6357_kick_wdt,
 	.dump_registers = mt6357_dump_register,
-
+	.is_charging_done = mt6357_is_charging_done,//prize-mod wyq 20181119 for battery charging full check
 	/* Event */
 	.event = mt6357_do_event,
 };
 
+//prize-mod wyq 20181119, add for aw3216 switch charger support-start
+#ifndef CONFIG_MTK_AW3216_CHARGER
 static void watchdog_int_handler(void)
 {
 	pr_notice("mt6357 CHRWDT IRQ\n");
 }
+#endif
+//prize-mod wyq 20181119, add for aw3216 switch charger support-end
 
 static int mt6357_charger_init_setting(struct mt6357_charger *info)
 {
@@ -433,8 +506,12 @@ static int mt6357_charger_init_setting(struct mt6357_charger *info)
 	/* pmic_set_register_value(PMIC_RG_LOW_ICH_DB, 1); 16ms */
 	/* TODO */
 
+//prize-mod wyq 20181119, add for aw3216 switch charger support-start
+#ifndef CONFIG_MTK_AW3216_CHARGER
 	pmic_register_interrupt_callback(INT_WATCHDOG, watchdog_int_handler);
 	pmic_enable_interrupt(INT_WATCHDOG, 1, "PMIC");
+#endif
+//prize-mod wyq 20181119, add for aw3216 switch charger support-end
 
 	return ret;
 }

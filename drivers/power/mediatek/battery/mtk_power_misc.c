@@ -19,7 +19,9 @@
 #include <linux/kthread.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-
+#if defined(CONFIG_PROJECT_KOOBEE_K6319)
+#include <mt-plat/mtk_boot.h>  //prize-chj-2019-06-15 Low temperature negative 20 degree shutdown
+#endif
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
 #else
@@ -487,7 +489,23 @@ int mtk_power_misc_psy_event(
 			psy, POWER_SUPPLY_PROP_TEMP, &val);
 		if (!ret) {
 			tmp = val.intval / 10;
-			if (tmp >= BATTERY_SHUTDOWN_TEMPERATURE) {
+//prize-chj-2019-06-15 Low temperature negative 20 degree shutdown start
+			bm_err("battery temperature = %d",tmp);
+#if defined(CONFIG_PROJECT_KOOBEE_K6319)
+			if ((tmp >= BATTERY_SHUTDOWN_TEMPERATURE) || (tmp <= BATTERY_SHUTDOWN_LOW_TEMPERATURE ) ){
+//prize-chj-2019-06-15 Restore factory settings can not be turned on, recovery mode is temperature -127 start
+				if (get_boot_mode() == RECOVERY_BOOT) {
+					bm_err(
+					"recovery battery temperature >= %d",
+					tmp);
+					return NOTIFY_DONE;
+				}
+//prize-chj-2019-06-15 Restore factory settings can not be turned on, recovery mode is temperature -127 end
+#else
+			if (tmp >= BATTERY_SHUTDOWN_TEMPERATURE){
+#endif
+//prize-chj-2019-06-15 Low temperature negative 20 degree shutdown end
+    
 				bm_err(
 					"battery temperature >= %d,shutdown",
 					tmp);

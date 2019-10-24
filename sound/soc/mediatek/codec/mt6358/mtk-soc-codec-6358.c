@@ -1308,10 +1308,14 @@ static void OpenTrimBufferHardware_withLO(bool enable, bool buffer_on)
 		hp_pull_down(true);
 
 		/* Switch HPL/HPR MUX to open */
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+#if 0
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0 << 8, 0xf << 8);
 
 		/* Switch LOL MUX to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0 << 2, 0x3 << 2);
+#endif
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 		/* Disable low-noise mode of DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0, 0x1);
@@ -1331,19 +1335,35 @@ static void OpenTrimBufferHardware_withLO(bool enable, bool buffer_on)
 		/* decrease HPL/R gain to normal gain step by step */
 		headset_volume_ramp(mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL], DL_GAIN_N_10DB);
 		Ana_Set_Reg(ZCD_CON1, DL_GAIN_N_10DB_REG, 0xffff);
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+#if 0
 		set_input_mux(0);
+#endif
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 		/* set HP aux feedback loop gain to max */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xf200, 0xff00);
 
 		/* Enable HP aux feedback loop */
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+#if 0
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3c, 0xff);
+#else
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0xff, 0xff);
+
+#endif
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 		/* Reduce HP aux feedback loop gain */
 		hp_aux_feedback_loop_gain_ramp(false);
 
 		/* decrease HPR/L main output stage step by step */
 		hp_main_output_ramp(false);
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0 << 8, 0xf << 8);
+		/* Switch LOL MUX to open */
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0 << 2, 0x3 << 2);
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 		/* Disable HP main output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);
@@ -4174,11 +4194,15 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Pull-down HPL/R to AVSS28_AUD */
 			hp_pull_down(true);
 
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+#if 0
 			/* Switch HPL/HPR MUX to open */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0 << 8, 0xf << 8);
 
 			/* Switch LOL MUX to open */
 			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0 << 2, 0x3 << 2);
+#endif
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 			/* Disable low-noise mode of DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0, 0x1);
@@ -4198,7 +4222,11 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* decrease HPL/R gain to normal gain step by step */
 			headset_volume_ramp(mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL], DL_GAIN_N_10DB);
 			Ana_Set_Reg(ZCD_CON1, DL_GAIN_N_10DB_REG, 0xffff);
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+#if 0
 			set_input_mux(0);
+#endif
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 			/* set HP aux feedback loop gain to max */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xf200, 0xff00);
@@ -4211,6 +4239,12 @@ static void Headset_Speaker_Amp_Change(bool enable)
 
 			/* decrease HPR/L main output stage step by step */
 			hp_main_output_ramp(false);
+
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 begin */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0 << 8, 0xf << 8);
+			/* Switch LOL MUX to open */
+			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0 << 2, 0x3 << 2);
+/* prize modified by lifenfen, refer to ALPS04674030, 20190705 end */
 
 			/* Disable HP main output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);

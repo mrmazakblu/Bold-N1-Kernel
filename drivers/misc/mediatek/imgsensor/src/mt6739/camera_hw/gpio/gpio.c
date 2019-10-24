@@ -61,10 +61,16 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 	{"cam_mipi_switch_sel_1"},
 	{"cam_mipi_switch_sel_0"}
 #endif
+	{"cam0_afen_on"},		//PRIZE
+	{"cam0_afen_off"},		//PRIZE
 };
 
 static struct GPIO gpio_instance;
-
+/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  add for af_en */
+struct pinctrl_state *ppinctrl_cam_af_ldo_h;
+struct pinctrl_state *ppinctrl_cam_af_ldo_l;
+struct pinctrl		 *ppinctrl_cam_ext;
+/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  end for af_en */
 /*
 * reset all state of gpio to default value
 */
@@ -89,6 +95,9 @@ static enum IMGSENSOR_RETURN gpio_init(void *pinstance)
 	enum   IMGSENSOR_RETURN ret           = IMGSENSOR_RETURN_SUCCESS;
 
 	pgpio->ppinctrl = devm_pinctrl_get(&pplatform_dev->dev);
+	/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  add for af_en */
+	ppinctrl_cam_ext=pgpio->ppinctrl;
+	/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  end for af_en */
 	if (IS_ERR(pgpio->ppinctrl)) {
 		PK_PR_ERR("%s : Cannot find camera pinctrl!", __func__);
 		ret = IMGSENSOR_RETURN_ERROR;
@@ -104,7 +113,10 @@ static enum IMGSENSOR_RETURN gpio_init(void *pinstance)
 			ret = IMGSENSOR_RETURN_ERROR;
 		}
 	}
-
+	/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  add for af_en */
+	 ppinctrl_cam_af_ldo_h=pinctrl_lookup_state(pgpio->ppinctrl,"cam_ldo_vcamaf_1");
+	ppinctrl_cam_af_ldo_l=pinctrl_lookup_state(pgpio->ppinctrl,"cam_ldo_vcamaf_0");
+	/* zhengjiang.zhu@Koobee..Camera.Driver  2018/04/13  end  for af_en */
 	return ret;
 }
 
@@ -123,7 +135,7 @@ static enum IMGSENSOR_RETURN gpio_set(
 #ifdef MIPI_SWITCH
 	   pin > IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL ||
 #else
-	   pin > IMGSENSOR_HW_PIN_AFVDD ||
+	   pin > IMGSENSOR_HW_PIN_CAMAFEN ||	//PRIZE pin > IMGSENSOR_HW_PIN_AFVDD ||
 #endif
 	   pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 	   pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH)
@@ -147,6 +159,12 @@ static enum IMGSENSOR_RETURN gpio_set(
 		ppinctrl_state = pgpio->ppinctrl_state[ctrl_state_offset +
 						((pin - IMGSENSOR_HW_PIN_PDN) << 1) + gpio_state];
 	}
+	//PRIZE +
+	printk("cxw gpio_set pin =%d\n", pin);
+	if (pin == IMGSENSOR_HW_PIN_CAMAFEN)
+		ppinctrl_state = pgpio->ppinctrl_state[GPIO_CTRL_STATE_CAM0_AFEN_H + gpio_state];
+	//PRIZE -
+	
 
 	mutex_lock(&pinctrl_mutex);
 	if (ppinctrl_state != NULL && !IS_ERR(ppinctrl_state))

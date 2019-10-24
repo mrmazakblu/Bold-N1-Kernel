@@ -119,7 +119,7 @@
 							 /* maximum 2047 */
 		};
 		dsv {
-			compatible = "mediatek,mt6370_pmu_dsv";
+			/* compatible = "mediatek,mt6370_pmu_dsv"; */
 			interrupt-names = "dsv_vneg_ocp", "dsv_vpos_ocp",
 					  "dsv_bst_ocp", "dsv_vneg_scp",
 					  "dsv_vpos_scp";

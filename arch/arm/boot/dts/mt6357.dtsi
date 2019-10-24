@@ -230,4 +230,30 @@ mt_pmic_regulator {
 		};
 	};	/* End of ldo_regulators */
 };/* End of mt_pmic_regulator */
+
+//prize-add wyq 20181119, add for aw3216 switch charger-start
+#ifdef CONFIG_MTK_AW3216_CHARGER
+mt6357_charger {
+	compatible = "mediatek,mt6357_charger";
+	interrupt-names = "chg_mivr", "chg_aiclmeasi", "attachi",
+		"ovpctrl_uvp_d_evt", "chg_wdtmri", "chg_vbusov",
+		"chg_tmri", "chg_treg";
+	charger_name = "primary_chg";
+	load_switch_name = "primary_load_switch";
+	ichg = <2000000>;	/* uA */
+	aicr = <500000>;	/* uA */
+	mivr = <4400000>;	/* uV */
+	cv = <4350000>;		/* uA */
+	ieoc = <150000>;	/* uA */
+	safety_timer = <12>;	/* hour */
+	dc_wdt = <4000000>;	/* us */
+	ircmp_resistor = <25000>;	/* uohm */
+	ircmp_vclamp = <32000>;		/* uV */
+	enable_te;
+	enable_wdt;
+	/* enable_polling; */	/* is this charger needs polling */
+};
+#endif
+//prize-add wyq 20181119, add for aw3216 switch charger-end
+
 };

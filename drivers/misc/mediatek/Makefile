@@ -200,3 +200,21 @@ obj-y += timer/
 #io boost
 obj-y += io_boost/
 
+#prize-add prize-pengzhipeng-20180827-start
+obj-y += prize/
+#prize-add prize-pengzhipeng-20180827-start
+
+#prize-add prize-wangyunqing-20181110-start
+obj-$(CONFIG_PRIZE_HARDWARE_INFO) += hardware_info/
+#prize-add prize-wangyunqing-20181110-end
+#/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  add for hall1120*/ 
+obj-$(CONFIG_PRIZE_STEP_MOTOR_ENABLE) += prize_step_motor/
+obj-$(CONFIG_SENSOR_HALL_MXM1120) += hall_m120/
+#/*zhengjiang.zhu@prize.Camera.Driver  2018/09/30  add for hall1120*/
+
+#prize added by chenjiaxi, prize_dual_camera driver, 20190111-start
+obj-$(CONFIG_PRIZE_DUAL_CAMERA_ENABLE) += prize_dual_camera/
+#prize added by chenjiaxi, prize_dual_camera driver, 20190111-end
+#add by zyt liuyonglin at 20190122 begin
+obj-$(CONFIG_PRIZE_VEB_A5) += veb_a5spi_driver/
+#add by zyt liuyonglin at 20190122 end

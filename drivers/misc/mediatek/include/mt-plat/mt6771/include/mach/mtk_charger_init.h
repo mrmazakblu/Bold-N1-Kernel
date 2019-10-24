@@ -57,11 +57,19 @@
 
 /* pe */
 #define PE_ICHG_LEAVE_THRESHOLD 1000 /* mA */
-#define TA_AC_12V_INPUT_CURRENT 3200000
-#define TA_AC_9V_INPUT_CURRENT	3200000
-#define TA_AC_7V_INPUT_CURRENT	3200000
+
+/* begin, prize-sunshuai-20190123, modify input current for charger PE */
+#define TA_AC_12V_INPUT_CURRENT 1650000
+#define TA_AC_9V_INPUT_CURRENT	1650000
+#define TA_AC_7V_INPUT_CURRENT	1650000
+/* end, prize-sunshuai-20190123, modify input current for charger PE */
+
 #define TA_9V_SUPPORT
+/* begin, prize-lifenfen-20181222, delete 12V for charger PE+ */
+#if 0
 #define TA_12V_SUPPORT
+#endif
+/* end, prize-lifenfen-20181222, delete 12V for charger PE+ */
 
 /* pe2.0 */
 #define PE20_ICHG_LEAVE_THRESHOLD 1000 /* mA */

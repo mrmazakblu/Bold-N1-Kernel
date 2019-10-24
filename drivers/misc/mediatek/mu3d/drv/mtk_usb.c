@@ -419,6 +419,13 @@ static bool __usb_cable_connected(int ops)
 		connected = true;
 		os_printk(K_INFO, "%s type force to STANDARD_HOST\n", __func__);
 	} else {
+
+	     /* begin, prize-sunshuai-2019-03-21, add for usb start */
+	     printk("__usb_cable_connected start msleep(100) \n");
+		 msleep(100);
+		 printk("__usb_cable_connected end msleep(100) \n");
+		 /* begin, prize-sunshuai-2019-03-21, add for usb end */
+
 		/* TYPE CHECK*/
 		chg_type = _mu3d_musb->charger_mode = mu3d_hal_get_charger_type();
 		if (fake_CDP && chg_type == STANDARD_HOST) {

@@ -48,3 +48,15 @@ obj-$(CONFIG_CHARGER_RT9467) += rt9467.o
 obj-$(CONFIG_CHARGER_RT9458) += rt9458.o
 obj-$(CONFIG_MTK_BQ25890_SUPPORT) += bq25890.o
 obj-$(CONFIG_CHARGER_HL7005) += hl7005.o
+
+
+#PRIZE
+obj-$(CONFIG_CHARGER_HL7005ALL) += hl7005all.o
+
+# begin, prize-lifenfen-20190103, add for wireless power receiver mt5715
+obj-$(CONFIG_PRIZE_WIRELESS_RECEIVER_MAXIC_MT5715) += MT5715_wireless_driver.o
+# end, prize-lifenfen-20190103, add for wireless power receiver mt5715
+
+#//prize added by huarui, ne6153 support, 20190111-start
+obj-$(CONFIG_PRIZE_NE6153_SUPPORT) += ne6153.o
+#//prize added by huarui, ne6153 support, 20190111-end

@@ -35,9 +35,11 @@ struct REGULATOR_CTRL regulator_control[REGULATOR_TYPE_MAX_NUM] = {
 	{"vcama_sub"},
 	{"vcamd_sub"},
 	{"vcamio_sub"},
-	{"vcama_main2"},
-	{"vcamd_main2"},
-	{"vcamio_main2"},
+	/*zhengjiang.zhu@prize.Camera.Driver  2018/12/7  add for main-2*/
+	{"vcama_sub"}, //vcama_main2
+	{"vcamd_sub"},//vcamd_main2
+	{"vcamio_sub"},//vcamio_main2
+	/*zhengjiang.zhu@prize.Camera.Driver  2018/12/7  end for main-2*/
 	{"vcama_sub2"},
 	{"vcamd_sub2"},
 	{"vcamio_sub2"},

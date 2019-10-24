@@ -123,7 +123,9 @@ static struct step_c_context *step_c_context_alloc_object(void)
 		STEP_C_PR_ERR("Alloc step_c object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 2000);	/*0.5Hz */
+	//prize-Solve the problem of slow update of pedometer-pengzhipeng-20190304-start
+	atomic_set(&obj->delay, 1000);	/*0.5Hz */
+	//prize-Solve the problem of slow update of pedometer-pengzhipeng-20190304-end
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, step_c_work_func);
 	init_timer(&obj->timer);

@@ -99,6 +99,13 @@
 #include "mtk_ovl.h"
 #include "mtk_dramc.h"
 
+//prize-lixuefeng-20150512-start
+#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+#include "../../../hardware_info/hardware_info.h"
+extern struct hardware_info current_lcm_info;
+#endif
+//prize-lixuefeng-20150512-end
+
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 
@@ -4377,6 +4384,11 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		goto done;
 	} else {
 		DISPCHECK("disp_lcm_probe SUCCESS\n");
+		//prize-lixuefeng-20150512-start
+		#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+		current_lcm_info=pgc->plcm->drv->lcm_info;
+		#endif
+		//prize-lixuefeng-20150512-end
 	}
 
 	lcm_param = disp_lcm_get_params(pgc->plcm);
@@ -8172,6 +8184,162 @@ int primary_display_setbacklight(unsigned int level)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_END, 0, 0);
 	return ret;
 }
+
+//prize-add wyq 20181226 add  lcd-backlight mode interface-start
+int _set_backlight_mode_by_cmdq(unsigned int mode)
+{
+	int ret = 0;
+	struct cmdqRecStruct *cmdq_handle_backlight = NULL;
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 1);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight);
+	DISPDBG("primary backlight mode, handle=%p\n", cmdq_handle_backlight);
+	if (ret) {
+		DISPPR_ERROR("fail to create primary cmdq handle for backlight\n");
+		return -1;
+	}
+
+	if (primary_display_is_video_mode()) {
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 2);
+		cmdqRecReset(cmdq_handle_backlight);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
+		disp_lcm_set_backlight_mode(pgc->plcm, cmdq_handle_backlight, mode);
+		/*Async flush by cmdq*/
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
+		printk("[BL]_set_backlight_mode_by_cmdq ret=%d\n", ret);
+	} else {
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 3);
+		cmdqRecReset(cmdq_handle_backlight);
+		cmdqRecWait(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
+		_cmdq_handle_clear_dirty(cmdq_handle_backlight);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
+		disp_lcm_set_backlight_mode(pgc->plcm, cmdq_handle_backlight, mode);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 4);
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 6);
+		printk("[BL]_set_backlight_mode_by_cmdq ret=%d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_backlight);
+	cmdq_handle_backlight = NULL;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 5);
+
+	return ret;
+}
+
+int _set_backlight_mode_by_cpu(unsigned int mode)
+{
+	int ret = 0;
+
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
+		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
+		return 0;
+	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 0, 1);
+	if (primary_display_is_video_mode()) {
+		disp_lcm_set_backlight(pgc->plcm, NULL, mode);
+	} else {
+		DISPCHECK("[BL]display cmdq trigger loop stop[begin]\n");
+		if (primary_display_cmdq_enabled())
+			_cmdq_stop_trigger_loop();
+
+		DISPCHECK("[BL]display cmdq trigger loop stop[end]\n");
+
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+			DISPCHECK("[BL]primary display path is busy\n");
+			ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+						       DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+			DISPCHECK("[BL]wait frame done ret:%d\n", ret);
+		}
+
+		DISPCHECK("[BL]stop dpmgr path[begin]\n");
+		dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("[BL]stop dpmgr path[end]\n");
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+			DISPCHECK("[BL]primary display path is busy after stop\n");
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+						 DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+			DISPCHECK("[BL]wait frame done ret:%d\n", ret);
+		}
+		DISPCHECK("[BL]reset display path[begin]\n");
+		dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("[BL]reset display path[end]\n");
+
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 0, 2);
+
+		disp_lcm_set_backlight_mode(pgc->plcm, NULL, mode);
+
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 0, 3);
+
+		DISPCHECK("[BL]start dpmgr path[begin]\n");
+		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("[BL]start dpmgr path[end]\n");
+
+		if (primary_display_cmdq_enabled()) {
+			DISPCHECK("[BL]start cmdq trigger loop[begin]\n");
+			_cmdq_start_trigger_loop();
+		}
+		DISPCHECK("[BL]start cmdq trigger loop[end]\n");
+	}
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 0, 7);
+	return ret;
+}
+
+int primary_display_setbacklight_mode(unsigned int mode)
+{
+	int ret = 0;
+	static unsigned int last_mode;
+
+	DISPFUNC();
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
+		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
+		return 0;
+	}
+
+	if (last_mode == mode)
+		return 0;
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_START, 0, 0);
+
+//prize-wyq 20190325 hold lock to fix KE and CMDQ SW timeout issue that cause display frozeen-start
+//#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_switch_dst_lock();
+	_primary_path_lock(__func__);
+//#endif
+//prize-wyq 20190325 hold lock to fix KE and CMDQ SW timeout issue that cause display frozeen-end
+
+/*prize-wyq 20190521 fix Bug73848-CMDQ occur "SW timeout" error and phone takes 2s to wakeup when press powerkey to sleep & wakeup phone quickly-start*/
+	if (pgc->state == DISP_SLEPT) {
+		DISPPR_ERROR("Sleep State set backlight invald\n");
+	} else {
+		primary_display_idlemgr_kick(__func__, 0);
+		if (primary_display_cmdq_enabled()) {
+			if (primary_display_is_video_mode()) {
+				mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,
+						 MMPROFILE_FLAG_PULSE, 0, 7);
+				_set_backlight_mode_by_cmdq(mode);
+			} else {
+				_set_backlight_mode_by_cmdq(mode);
+			}
+			atomic_set(&delayed_trigger_kick, 1);
+		} else {
+			_set_backlight_mode_by_cpu(mode);
+		}
+	}
+	last_mode = mode;
+/*prize-wyq 20190521 fix Bug73848-CMDQ occur "SW timeout" error and phone takes 2s to wakeup when press powerkey to sleep & wakeup phone quickly-end*/
+
+//#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_unlock(__func__);
+	_primary_path_switch_dst_unlock();
+//#endif
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_END, 0, 0);
+	return ret;
+}
+//prize-add wyq 20181226 add  lcd-backlight mode interface-end
 
 int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigned int *lcm_value)
 {

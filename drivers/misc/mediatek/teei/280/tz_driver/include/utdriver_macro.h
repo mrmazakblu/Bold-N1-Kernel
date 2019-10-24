@@ -60,7 +60,7 @@
 #define NQ_BLOCK_SIZE			(32)
 #define BLOCK_MAX_COUNT			(NQ_BUFF_SIZE / NQ_BLOCK_SIZE - 1)
 
-#define FP_BUFF_SIZE			(512 * 1024)
+#define FP_BUFF_SIZE			(3 * 512 * 1024)
 
 #define CANCEL_MESSAGE_SIZE		(4096)
 #define KEYMASTER_BUFF_SIZE		(512 * 1024)
@@ -101,6 +101,7 @@
 #define LOCK_PM_MUTEX			0x0C
 #define UNLOCK_PM_MUTEX			0x0D
 #define SWITCH_CORE			0x0E
+#define MOVE_CORE			0x0F
 #define NT_DUMP_T			(0x10)
 #define VFS_SYS_NO			0x08
 #define REETIME_SYS_NO			0x07

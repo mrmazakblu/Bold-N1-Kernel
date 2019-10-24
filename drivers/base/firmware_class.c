@@ -280,7 +280,10 @@ static const char * const fw_path[] = {
 	"/lib/firmware/updates/" UTS_RELEASE,
 	"/lib/firmware/updates",
 	"/lib/firmware/" UTS_RELEASE,
-	"/lib/firmware"
+	"/lib/firmware",
+/* begin, prize-lifenfen-20181213, add for smartpa awinic aw8898 bin load */
+	"/etc/firmware"
+/* end, prize-lifenfen-20181213, add for smartpa awinic aw8898  bin load */
 };
 
 /*

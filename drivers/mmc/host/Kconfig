@@ -856,3 +856,11 @@ config MMC_MTK_COMM_SDIO
 	  If you have a machine with a integrated SDIO card reader, say Y or M here.
 	  This is needed if support for any SDIO devices is required.
 	  If unsure, say N.
+
+# prize added by wangmengdong,TF card , turn off VMCH to avoid damaging SIM card , 20190128-start
+config PRIZE_POWEROFF_VMCH_QUICK
+        bool "power off vmch after eint"
+        default y
+        help
+           Select Y to enable power off vmch after eint
+# prize added by wangmengdong,TF card , turn off VMCH to avoid damaging SIM card , 20190128-end

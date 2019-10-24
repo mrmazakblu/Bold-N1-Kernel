@@ -24,7 +24,13 @@
 
 /* mtk_cooler_mutt.c */
 /* 1: turn on MD Thermal Warning Notification; 0: turn off */
+/* prize added by lifenfen, thermal_clear_temperature notification when ett high temperature test, 20190605 begin */
+#ifdef CONFIG_FIXED_TBAT_25
+#define FEATURE_THERMAL_DIAG            (0)
+#else
 #define FEATURE_THERMAL_DIAG		(1)
+#endif
+/* prize added by lifenfen, thermal_clear_temperature notification when ett high temperature test, 20190605 end */
 
 /* mtk_cooler_mutt.c */
 /* 1: turn on adaptive MD throttle cooler; 0: turn off  */

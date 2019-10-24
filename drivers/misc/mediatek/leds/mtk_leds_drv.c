@@ -89,6 +89,7 @@ bool __weak disp_aal_is_support(void) { return false; };
 int __weak disp_bls_set_max_backlight(unsigned int level_1024) { return 0; };
 int __weak disp_bls_set_backlight(int level_1024) { return 0; }
 int __weak mtkfb_set_backlight_level(unsigned int level) { return 0; };
+int __weak mtkfb_set_backlight_mode(unsigned int mode) { return 0; };//prize-add wyq 20181226 add
 void __weak disp_pq_notify_backlight_changed(int bl_1024) {};
 static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level);
 
@@ -104,6 +105,177 @@ static unsigned int limit_flag;
 static unsigned int last_level;
 static unsigned int current_level;
 static DEFINE_MUTEX(bl_level_limit_mutex);
+
+#include <linux/uaccess.h>
+#include <linux/proc_fs.h>
+
+//prize-add wyq 20181226 add  lcd-backlight mode interface-start
+static unsigned int bl_hbm = 0;
+static unsigned int bl_brightness = 0;
+#if 1 //prize-wyq 20190319 fix cts test selinux fail issue
+static struct proc_dir_entry *bl_hbm_proc_entry;
+
+static int bl_hbm_read_proc(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", bl_hbm);
+
+	printk("bl_hbm_read_proc bl_hbm:%d\n", bl_hbm);
+	
+	return 0;
+}
+
+static int bl_hbm_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, bl_hbm_read_proc, inode->i_private);
+}
+
+static ssize_t bl_hbm_write_proc(struct file *filp, const char __user *buff, size_t count, loff_t *data)
+{
+	int state = -1;
+	char temp[8] = {0};
+	int len = 0;
+	//int ret = 0;
+
+	if (bl_hbm_proc_entry == NULL) {
+		printk("bl_hbm_proc_entry pointer null \n");
+		return -1;
+	}
+	
+	len = (count < (sizeof(temp) - 1)) ? count : (sizeof(temp) - 1);
+	if (copy_from_user(temp, buff, len))
+		return 0;
+
+	temp[len] = '\0';
+	
+	if(sscanf(temp, "%d", &state))
+	{
+		// 1: bl_hbm enter
+		// 0: bl_hbm exit
+		bl_hbm = state;
+		LEDS_DRV_INFO("set bl_hbm start\n");
+		mtkfb_set_backlight_mode(state);
+		printk("bl_hbm=%d", state);
+	}
+	else
+	{
+		printk("bl_hbm error! \n");
+		return -EFAULT;
+	}
+
+	return count;
+}
+
+static const struct file_operations bl_hbm_fops = {
+	.owner = THIS_MODULE,
+	.open = bl_hbm_open,		
+	.write = bl_hbm_write_proc,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,	
+};
+
+static int bl_brightness_read_proc(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", bl_brightness);
+
+	printk("bl_hbm_read_proc bl_brightness:%d\n", bl_brightness);
+	
+	return 0;
+}
+
+static int bl_brightness_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, bl_brightness_read_proc, inode->i_private);
+}
+
+static ssize_t bl_brightness_write_proc(struct file *filp, const char __user *buff, size_t count, loff_t *data)
+{
+	int state = -1;
+	char temp[8] = {0};
+	int len = 0;
+	//int ret = 0;
+
+	if (bl_hbm_proc_entry == NULL) {
+		printk("bl_hbm_proc_entry pointer null \n");
+		return -1;
+	}
+	
+	len = (count < (sizeof(temp) - 1)) ? count : (sizeof(temp) - 1);
+	if (copy_from_user(temp, buff, len))
+		return 0;
+
+	temp[len] = '\0';
+	
+	if(sscanf(temp, "%d", &state))
+	{
+		bl_brightness = state;
+		LEDS_DRV_INFO("set brightness start\n");
+		mtkfb_set_backlight_level(state);
+		printk("bl_brightness=%d", state);
+	}
+	else
+	{
+		printk("bl_brightness error! \n");
+		return -EFAULT;
+	}
+
+	return count;
+}
+
+static const struct file_operations bl_brightness_fops = {
+	.owner = THIS_MODULE,
+	.open = bl_brightness_open,		
+	.write = bl_brightness_write_proc,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,	
+};
+int bl_hbm_node_create(void)
+{
+	bl_hbm_proc_entry = proc_mkdir("leds", NULL);
+	if (bl_hbm_proc_entry == NULL) {
+		printk("create_proc_entry screen_state FAILED!");
+		return -1;
+	}
+
+	proc_create("brightness", 0664, bl_hbm_proc_entry, &bl_brightness_fops);
+	proc_create("hbm_mode", 0664, bl_hbm_proc_entry, &bl_hbm_fops);
+
+	printk("create_proc_entry screen_state SUCCESS.");
+	return 0;
+}
+#endif
+static ssize_t show_hbm_mode(struct device *dev, struct device_attribute *attr,
+			 char *buf)
+{
+	LEDS_DRV_INFO("get backlight bhm mode is:%d\n", bl_hbm);
+	return sprintf(buf, "%u\n", bl_hbm);
+}
+
+static ssize_t store_hbm_mode(struct device *dev, struct device_attribute *attr,
+			  const char *buf, size_t size)
+{
+	unsigned long mode = 0;
+	ssize_t ret;
+	
+	LEDS_DRV_INFO("set hbm_mode start\n");
+	ret = kstrtoul(buf, 10, &mode);
+	if (ret) {
+		LEDS_DRV_INFO("set hbm_mode failed!\n");
+		return ret;
+	}
+	// 1: bl_hbm enter
+	// 0: bl_hbm exit
+	bl_hbm = (unsigned int)mode;
+ 
+	mtkfb_set_backlight_mode(bl_hbm);
+	
+	LEDS_DRV_INFO("bl_hbm=%u", bl_hbm);
+	
+	return size;
+}
+static DEVICE_ATTR(hbm_mode, 0664, show_hbm_mode, store_hbm_mode);
+//prize-add wyq 20181226 add  lcd-backlight mode interface-end
 
 /****************************************************************************
  * external functions for display
@@ -634,7 +806,7 @@ static int led_i2c_remove(struct i2c_client *client)
 static int mt65xx_leds_probe(struct platform_device *pdev)
 {
 	int i;
-	int ret;/* rc; */
+	int ret, rc;
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
 
 	if (cust_led_list == NULL) {
@@ -677,9 +849,19 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 		INIT_WORK(&g_leds_data[i]->work, mt_mt65xx_led_work);
 
 		ret = led_classdev_register(&pdev->dev, &g_leds_data[i]->cdev);
-		#if 0
+		#if 1
 		if (strcmp(g_leds_data[i]->cdev.name, "lcd-backlight") == 0) {
+			//prize-add wyq 20181227 for high brightness mode-start
 			rc = device_create_file(g_leds_data[i]->cdev.dev,
+						&dev_attr_hbm_mode);
+			if (rc) {
+				LEDS_DRV_DEBUG
+				    ("device_create_file hbm mode fail!\n");
+			}
+			bl_hbm_node_create();
+			//prize-add wyq 20181227 for high brightness mode-end
+			
+			/*rc = device_create_file(g_leds_data[i]->cdev.dev,
 						&dev_attr_duty);
 			if (rc) {
 				LEDS_DRV_DEBUG
@@ -706,7 +888,7 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 				LEDS_DRV_DEBUG
 				    ("device_create_file duty fail!\n");
 			}
-			bl_setting = &g_leds_data[i]->cust;
+			bl_setting = &g_leds_data[i]->cust;*/
 		}
 		#endif
 		if (ret)

@@ -16,6 +16,13 @@
 #include <mtk_gauge_class.h>
 #include <mtk_battery_internal.h>
 
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+#if defined(CONFIG_MTK_CW2015_SUPPORT)
+extern int g_cw2015_capacity;
+extern int g_cw2015_vol;
+extern int cw2015_exit_flag;
+#endif
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 
 #if (CONFIG_MTK_GAUGE_VERSION != 30)
 signed int battery_get_bat_voltage(void)
@@ -74,7 +81,18 @@ signed int battery_get_bat_avg_current(void)
 
 signed int battery_get_bat_voltage(void)
 {
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+	#if defined(CONFIG_MTK_CW2015_SUPPORT)
+	if(cw2015_exit_flag==1)
+		return g_cw2015_vol;
+	else
+		return pmic_get_battery_voltage();
+	#else
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 	return pmic_get_battery_voltage();
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+	#endif
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 }
 
 signed int battery_get_bat_current(void)
@@ -95,11 +113,24 @@ signed int battery_get_bat_current_mA(void)
 
 signed int battery_get_soc(void)
 {
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+#if defined(CONFIG_MTK_CW2015_SUPPORT)
+	if(cw2015_exit_flag==1)
+		return g_cw2015_capacity;
+	else
+		return get_mtk_battery()->soc;
+#else
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 	return get_mtk_battery()->soc;
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+#endif
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 }
 
 signed int battery_get_uisoc(void)
 {
+	//prize wyq 20181108 return real uisoc in meta and factory mode for battery test before delivery   
+#if 0
 	int boot_mode = get_boot_mode();
 
 	if ((boot_mode == META_BOOT) ||
@@ -107,8 +138,19 @@ signed int battery_get_uisoc(void)
 		(boot_mode == FACTORY_BOOT) ||
 		(boot_mode == ATE_FACTORY_BOOT))
 		return 75;
-
+#endif
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+#if defined(CONFIG_MTK_CW2015_SUPPORT)
+	if(cw2015_exit_flag==1)
+		return g_cw2015_capacity;
+	else
+		return get_mtk_battery()->ui_soc;
+#else
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 	return get_mtk_battery()->ui_soc;
+/* begin, prize-lifenfen-20181207, add fuel gauge cw2015 */
+#endif
+/* end, prize-lifenfen-20181207, add fuel gauge cw2015 */
 }
 
 signed int battery_get_bat_temperature(void)

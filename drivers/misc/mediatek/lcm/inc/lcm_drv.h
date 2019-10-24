@@ -18,6 +18,12 @@
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 
+//prize-add prize-wangyunqing-20181110-start
+#if defined(CONFIG_PRIZE_HARDWARE_INFO)
+#include "../../hardware_info/hardware_info.h"
+#endif
+//prize-add prize-wangyunqing-20181110-end
+
 #ifndef ARY_SIZE
 #define ARY_SIZE(x) (sizeof((x)) / sizeof((x[0])))
 #endif
@@ -834,6 +840,15 @@ typedef enum {
 
 typedef struct {
 	const char *name;
+
+//prize-add prize-wangyunqing-20181110-start	
+    #if defined(CONFIG_PRIZE_HARDWARE_INFO)
+	struct hardware_info lcm_info;
+    #endif
+//prize-add prize-wangyunqing-20181110-end
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 begin */
+	unsigned int (*backlight_level)(void);
+/* prize added by lifenfen, for backlight_level func ,  get Amoled lcd backlight if lcd esd recovery, 20190221 end */
 	void (*set_util_funcs)(const LCM_UTIL_FUNCS *util);
 	void (*get_params)(LCM_PARAMS *params);
 
@@ -855,7 +870,7 @@ typedef struct {
 	void (*set_backlight_cmdq)(void *handle, unsigned int level);
 	void (*set_pwm)(unsigned int divider);
 	unsigned int (*get_pwm)(unsigned int divider);
-	void (*set_backlight_mode)(unsigned int mode);
+	void (*set_backlight_mode)(void *handle, unsigned int mode);//prize-wyq 20190325 modify for cmdq handle
 	/* ///////////////////////// */
 
 	int (*adjust_fps)(void *cmdq, int fps, LCM_PARAMS *params);
@@ -909,5 +924,21 @@ extern int display_bias_disable(void);
 extern int display_bias_regulator_init(void);
 
 
+//prize
+extern int display_bias_vpos_enable(int enable);
+extern int display_bias_vneg_enable(int enable);
+extern int display_bias_vpos_set(int mv);
+extern int display_bias_vneg_set(int mv);
+extern int display_ldo18_enable(int enable);
+extern int display_ldo28_enable(int enable);
 
+/* begin, prize-lifenfen-20181206, add for lcm gpio pinctl control */
+#define LCM_RESET_PIN_NO         0
+#define LCM_POWER_DP_NO          1             //2.8V
+#define LCM_POWER_DM_NO          2             //1.8V
+#define LCM_POWER_ENP_NO         3
+#define LCM_POWER_ENN_NO         4
+
+int mt_dsi_pinctrl_set(unsigned int pin , unsigned int level);
+/* end, prize-lifenfen-20181206, add for lcm gpio pinctl control */
 #endif /* __LCM_DRV_H__ */

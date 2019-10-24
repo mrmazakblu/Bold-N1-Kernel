@@ -74,12 +74,18 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 	{"cam_mipi_switch_en_1"},
 	{"cam_mipi_switch_en_0"},
 	{"cam_mipi_switch_sel_1"},
-	{"cam_mipi_switch_sel_0"}
+	{"cam_mipi_switch_sel_0"},  //prize-mod pengguangyi 2019014 modify for Camera mipi switch
 #endif
+	{"cam0_afen_on"},		//PRIZE
+	{"cam0_afen_off"}		//PRIZE
 };
 
 static struct GPIO gpio_instance;
-
+/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
+struct pinctrl_state *ppinctrl_cam_af_en_h;
+struct pinctrl_state *ppinctrl_cam_af_en_l;
+struct pinctrl		 *ppinctrl_cam;
+/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
 static enum IMGSENSOR_RETURN gpio_init(
 	void *pinstance,
 	struct IMGSENSOR_HW_DEVICE_COMMON *pcommon)
@@ -96,7 +102,10 @@ static enum IMGSENSOR_RETURN gpio_init(
 		PK_PR_ERR("%s : Cannot find camera pinctrl!", __func__);
 		ret = IMGSENSOR_RETURN_ERROR;
 	}
-
+	/*zhengjiang.zhu@prize.Camera.Driver  2018/11/16  end for af en*/
+	ppinctrl_cam =pgpio->ppinctrl;
+	ppinctrl_cam_af_en_h=pinctrl_lookup_state(pgpio->ppinctrl,"af_en_h");
+	ppinctrl_cam_af_en_l=pinctrl_lookup_state(pgpio->ppinctrl,"af_en_l");
 	for (i = 0; i < GPIO_CTRL_STATE_MAX_NUM; i++, pgpio_pinctrl++) {
 		if (pgpio_pinctrl->ppinctrl_lookup_names)
 			pgpio->ppinctrl_state[i] =
@@ -140,8 +149,8 @@ static enum IMGSENSOR_RETURN gpio_set(
 	if (pin < IMGSENSOR_HW_PIN_PDN ||
 #ifdef MIPI_SWITCH
 	    pin > IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL ||
-#else
-	   pin > IMGSENSOR_HW_PIN_DOVDD ||
+#else 
+	   pin > IMGSENSOR_HW_PIN_DOVDD || pin > IMGSENSOR_HW_PIN_CAMAFEN ||
 #endif
 	   pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 	   pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH)
@@ -167,6 +176,11 @@ static enum IMGSENSOR_RETURN gpio_set(
 		ppinctrl_state = pgpio->ppinctrl_state[ctrl_state_offset +
 						((pin - IMGSENSOR_HW_PIN_PDN) << 1) + gpio_state];
 	}
+	//PRIZE +
+	//printk("cxw gpio_set pin =%d\n", pin);
+	if (pin == IMGSENSOR_HW_PIN_CAMAFEN)
+		ppinctrl_state = pgpio->ppinctrl_state[GPIO_CTRL_STATE_CAM0_AFEN_H + gpio_state];
+	//PRIZE -
 
 	mutex_lock(pgpio->pgpio_mutex);
 

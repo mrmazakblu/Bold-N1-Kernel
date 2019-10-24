@@ -30,11 +30,53 @@ struct mmc_gpio {
 	char cd_label[0];
 };
 
+/* modify trigger for esd, edge ->level, Lifenfen, 20160701 */
+#define CONFIG_MTK_CD_LEVEL
+#ifdef CONFIG_MTK_CD_LEVEL
+static unsigned int cd_pin;
+
+void mmc_set_cd_gpio(unsigned int gpio)
+{
+	cd_pin = gpio;
+	return;
+}
+EXPORT_SYMBOL(mmc_set_cd_gpio);
+
+static int mmc_get_cd_gpio_value(void)
+{
+	return __gpio_get_value(cd_pin);
+}
+/* end */
+#endif
+/* prize added by wangmengdong , TF card , turn off VMCH to avoid damaging SIM card , 20190128-start */
+#if defined(CONFIG_PRIZE_POWEROFF_VMCH_QUICK)
+extern void msdc_sd_power_off_quick(void);
+#endif
+/* prize added by wangmengdong , TF card , turn off VMCH to avoid damaging SIM card , 20190128-end */
+
 static irqreturn_t mmc_gpio_cd_irqt(int irq, void *dev_id)
 {
 	/* Schedule a card detection after a debounce timeout */
 	struct mmc_host *host = dev_id;
 
+#ifdef CONFIG_MTK_CD_LEVEL
+	/* modify trigger for esd, edge ->level, Lifenfen, 20160622 */
+	//if (cd_pin > 0)
+	{
+		if (mmc_get_cd_gpio_value() == 0) {
+			irq_set_irq_type(irq, IRQF_TRIGGER_HIGH | IRQF_ONESHOT);
+		} else {
+			irq_set_irq_type(irq, IRQF_TRIGGER_LOW | IRQF_ONESHOT);
+		}
+	}
+	/* end */
+#endif
+
+/* prize added by wangmengdong , TF card , turn off VMCH to avoid damaging SIM card , 20190128-start */
+#if defined(CONFIG_PRIZE_POWEROFF_VMCH_QUICK)
+		msdc_sd_power_off_quick();
+#endif
+/* prize added by wangmengdong , TF card , turn off VMCH to avoid damaging SIM card , 20190128-end */
 	host->trigger_card_event = true;
 	mmc_detect_change(host, msecs_to_jiffies(200));
 
@@ -139,10 +181,28 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
 	if (irq >= 0) {
 		if (!ctx->cd_gpio_isr)
 			ctx->cd_gpio_isr = mmc_gpio_cd_irqt;
+#ifdef CONFIG_MTK_CD_LEVEL
+	/* modify trigger for esd, edge ->level, Lifenfen, 20160622 */
+	if (mmc_get_cd_gpio_value() == 0)
+	{
+		ret = devm_request_threaded_irq(host->parent, irq,
+			NULL, ctx->cd_gpio_isr,
+			IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+			ctx->cd_label, host);
+	}
+	else
+	{
+		ret = devm_request_threaded_irq(host->parent, irq,
+			NULL, ctx->cd_gpio_isr,
+			IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+			ctx->cd_label, host);
+	}
+#else
 		ret = devm_request_threaded_irq(host->parent, irq,
 			NULL, ctx->cd_gpio_isr,
 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 			ctx->cd_label, host);
+#endif
 		if (ret < 0)
 			irq = ret;
 		else

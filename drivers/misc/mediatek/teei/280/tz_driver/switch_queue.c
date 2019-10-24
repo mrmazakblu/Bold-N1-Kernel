@@ -12,6 +12,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/cpu.h>
@@ -101,9 +102,19 @@ static int ut_smc_call(void *buff)
 		.data = buff,
 	};
 
+#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
+	if (!kthread_queue_work(&ut_fastcall_worker, &usc_work.work))
+#else
 	if (!queue_kthread_work(&ut_fastcall_worker, &usc_work.work))
+#endif
 		return -1;
+
+#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
+	kthread_flush_work(&usc_work.work);
+#else
 	flush_kthread_work(&usc_work.work);
+#endif
+
 	return 0;
 }
 
@@ -124,6 +135,7 @@ static int check_work_type(int work_type)
 	case LOCK_PM_MUTEX:
 	case UNLOCK_PM_MUTEX:
 	case SWITCH_CORE:
+	case MOVE_CORE:
 	case NT_DUMP_T:
 #ifdef TUI_SUPPORT
 	case POWER_DOWN_CALL:
@@ -413,6 +425,9 @@ static void switch_fn(struct kthread_work *work)
 	case SWITCH_CORE:
 		handle_switch_core((int)(switch_ent->buff_addr));
 		break;
+	case MOVE_CORE:
+		handle_move_core((int)(switch_ent->buff_addr));
+		break;
 	case NT_DUMP_T:
 		retVal = handle_dump_call((void *)(switch_ent->buff_addr));
 		if (retVal < 0)
@@ -424,7 +439,6 @@ static void switch_fn(struct kthread_work *work)
 		break;
 	}
 
-	IMSG_DEBUG("%s: Dump TZ_LOG, call_type 0x%x\n", __func__, call_type);
 	atomic_notifier_call_chain(&s->notifier, TZ_CALL_RETURNED, NULL);
 	retVal = destroy_switch_call_struct(switch_ent);
 	if (retVal != 0)
