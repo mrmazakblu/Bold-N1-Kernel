@@ -3919,11 +3919,11 @@ static int tpd_local_init(void)
 #endif
 
 
-	boot_mode = get_boot_mode();
-	if (boot_mode == 3) {
-		boot_mode = NORMAL_BOOT;
-	}
-	return 0;
+//	boot_mode = get_boot_mode();
+//	if (boot_mode == 3) {
+//		boot_mode = NORMAL_BOOT;
+//	}
+//	return 0;
 }
 
 static struct tpd_driver_t synaptics_rmi4_driver = {

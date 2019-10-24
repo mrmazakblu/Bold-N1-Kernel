@@ -522,9 +522,9 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 #endif
 
 	// important
-    if (RECOVERY_BOOT == get_boot_mode()){
-        return 0;		
-	}
+//    if (RECOVERY_BOOT == get_boot_mode()){
+//      return 0;		
+//    }
 	
 	if(client->addr != 0x5d)
 	{
