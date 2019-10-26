@@ -713,7 +713,7 @@ static void __exit tpd_device_exit(void)
 {
 	TPD_DMESG("MediaTek touch panel driver exit\n");
 	/* input_unregister_device(tpd->dev); */
-	platform_driver_unregister(&tpd_driver);
+/*	platform_driver_unregister(&tpd_driver); */
 }
 
 late_initcall(tpd_device_init);

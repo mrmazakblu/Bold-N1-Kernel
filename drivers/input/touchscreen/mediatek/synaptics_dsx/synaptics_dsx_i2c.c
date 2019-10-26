@@ -3918,12 +3918,12 @@ static int tpd_local_init(void)
 	tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local);
 #endif
 
-
+	boot_mode = NORMAL_BOOT;
 //	boot_mode = get_boot_mode();
 //	if (boot_mode == 3) {
 //		boot_mode = NORMAL_BOOT;
 //	}
-//	return 0;
+	return 0;
 }
 
 static struct tpd_driver_t synaptics_rmi4_driver = {

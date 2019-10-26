@@ -2298,7 +2298,7 @@ static int __init goodix_i2c_init(void)
  */
 static void __exit goodix_i2c_exit(void)
 {
-	tpd_driver_remove(&googid_gt8x_driver);
+/*	tpd_driver_remove(&googid_gt8x_driver); */
 	return;
 }
 #else
@@ -2310,7 +2310,7 @@ static int __init goodix_i2c_init(void)
 
 static void __exit goodix_i2c_exit(void)
 {
-	i2c_del_driver(&goodix_i2c_driver);
+/*	i2c_del_driver(&goodix_i2c_driver); */
 	return;
 }
 #endif
